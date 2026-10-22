@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Story Land — Children's Stories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- Floating sky decorations -->
+<div class="sky" aria-hidden="true">
+  <div class="cloud cloud-1"></div>
+  <div class="cloud cloud-2"></div>
+  <div class="cloud cloud-3"></div>
+  <span class="star s1">★</span>
+  <span class="star s2">★</span>
+  <span class="star s3">★</span>
+  <span class="star s4">★</span>
+  <span class="star s5">★</span>
+  <span class="balloon b1">🎈</span>
+  <span class="balloon b2">🎈</span>
+</div>
+
+<!-- ============ HOME VIEW ============ -->
+<main id="homeView">
+  <header class="hero">
+    <div class="hero-emoji" aria-hidden="true">📚✨</div>
+    <h1 class="hero-title">Story <span class="rainbow-text">Land</span></h1>
+    <p class="hero-sub">Pick a story, little reader! Every tale has a picture, a giggle, and a tiny bit of magic.</p>
+  </header>
+
+  <section class="story-grid" id="storyGrid" aria-label="Story list"></section>
+
+  <footer class="footer">
+    <p>Made with ❤️ for little readers everywhere · Story Land</p>
+  </footer>
+</main>
+
+<!-- ============ STORY VIEW ============ -->
+<main id="storyView" hidden>
+  <button class="back-btn" id="backBtn" type="button">⬅ All Stories</button>
+
+  <article class="story-page">
+    <div class="story-hero">
+      <img id="storyImg" alt="" />
+      <div class="story-hero-shine" aria-hidden="true"></div>
+    </div>
+
+    <h2 class="story-title" id="storyTitle"></h2>
+    <p class="story-meta" id="storyMeta"></p>
+
+    <div class="story-actions">
+      <button class="read-btn" id="readBtn" type="button">🔊 Read it to me</button>
+      <button class="read-btn stop" id="stopBtn" type="button" hidden>⏹ Stop</button>
+    </div>
+
+    <div class="story-body" id="storyBody"></div>
+
+    <div class="moral-box">
+      <span class="moral-star" aria-hidden="true">⭐</span>
+      <p id="storyMoral"></p>
+    </div>
+
+    <button class="back-btn bottom" id="backBtn2" type="button">⬅ Back to all stories</button>
+  </article>
+</main>
+
+<script src="stories.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
