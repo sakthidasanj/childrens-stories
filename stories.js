@@ -62,5 +62,48 @@ window.STORIES = [
       "Together, step by step and flap by flap, they carried the little star to the top of the tallest hill. The Moon bent down low, smiling her silver smile, and gently scooped the star back into the sky.",
       "\"Thank you, small friends,\" said the Moon. And from that night on, the littlest star twinkled the brightest of all — because it had been carried home by friends."
     ]
+  },
+  {
+    id: "inba-poonai-kutties",
+    title: "Inba and Her Poonai Kutties",
+    tagline: "Super Girl Inba vs. the funny foxes — a rescue full of giggles!",
+    age: "Ages 3–7",
+    minutes: "3 min read",
+    image: "images/inba-poonai-kutties.jpg",
+    moral: "A real superhero is strong AND kind — she saves her friends and makes new ones too.",
+    scenes: [
+      "In a little house with a big sunny garden lived Inba — the Super Girl! Her cape was bright red, her smile was super wide, and her best friends were three tiny poonai kutties: Vellai the white kitten, Mittai the sweet orange kitten, and Chinna, the littlest kitten of all.",
+      "One morning, two funny foxes tiptoed into the garden. Kuttai Nari, the short fox, whispered, \"Those kutties have a whole bowl of yummy fish! Let us take the bowl and run!\" Neela Nari, the tall fox, giggled, \"Hee hee hee! What a super-duper plan!\"",
+      "But the poonai kutties did NOT want to go anywhere near the foxes! They ran this way and that way and — hop, hop, hop! — up the big mango tree. \"Meow! Meow! Inbaaaa!\" they cried. Down below, the silly foxes danced around the tree, too funny to climb and too dizzy to think.",
+      "Then — WHOOSH! — a red cape flashed across the garden. \"SUPER GIRL INBA IS HERE!\" Inba did not shout, and she did not fight. She pulled out… a giant peacock feather! \"Kuchi kuchi kooo!\" she giggled, tickling the foxes' noses. \"ACHOO! Achoo! Hee hee hee!\" The funny foxes rolled on the grass, laughing and sneezing until their tummies hurt.",
+      "\"We are sorry,\" sniffed Kuttai Nari, still giggling. \"We only wanted fish… and friends to play with.\" Inba smiled her super smile. \"Then let us share!\" And so, under the mango tree, everyone ate fish together — Vellai, Mittai, Chinna, two funny foxes, and one Super Girl with the kindest heart in the whole wide world."
+    ],
+    videos: [
+      { src: "media/inba-video-1-playing.mp4", label: "🎬 Part 1 — Playing in the garden" },
+      { src: "media/inba-video-2-foxes.mp4", label: "🎬 Part 2 — Here come the funny foxes!" },
+      { src: "media/inba-video-3-rescue.mp4", label: "🎬 Part 3 — Super Girl to the rescue!" }
+    ],
+    song: {
+      title: "Inba Super Girl Paattu",
+      src: "media/inba-super-girl-song.mp3",
+      lyrics: [
+        "இன்பா இன்பா சூப்பர் பொண்ணு!",
+        "சிவப்பு மேலங்கி பறக்கும் பொண்ணு!",
+        "பூனைக் குட்டிகளின் காவல் பொண்ணு!",
+        "எல்லோருக்கும் அன்பு பொண்ணு!",
+        "வெள்ளை, மிட்டாய், சின்னா மூணு,",
+        "மியாவ் மியாவ் பாடும் பூனை!",
+        "தோட்டத்தில் ஆடும் பூனை,",
+        "இன்பா வீட்டு செல்லப் பூனை!",
+        "குட்டை நரி, நீள நரி வந்தாரே,",
+        "கீ கீ என்று சிரித்து வந்தாரே!",
+        "இறகு கூச்சம் காட்டினாளே,",
+        "நரிகள் எல்லாம் சிரித்து விழுந்தாரே!",
+        "மீன் சாப்பிட்டு மகிழ்ந்தாரே,",
+        "எல்லோரும் நண்பர்கள் ஆனாரே!",
+        "இன்பா இன்பா சூப்பர் பொண்ணு!",
+        "அன்பு தான் அவள் சூப்பர் சக்தி!"
+      ]
+    }
   }
 ];

@@ -256,3 +256,28 @@ main { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; paddin
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .story-body p, .moral-box { opacity: 1; transform: none; }
 }
+
+/* ---------- Videos and song ---------- */
+.story-media { margin-top: 30px; display: grid; gap: 22px; }
+.story-media:empty { margin-top: 0; }
+.media-heading {
+  font-family: "Fredoka", sans-serif; font-size: 26px; font-weight: 600;
+  text-align: center; color: var(--ink);
+}
+.video-card {
+  background: rgba(255, 255, 255, .88);
+  border-radius: 22px; padding: 14px;
+  box-shadow: 0 8px 18px rgba(59, 47, 74, .12);
+}
+.video-label { font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 17px; margin-bottom: 10px; }
+.video-card video { width: 100%; display: block; border-radius: 16px; background: #221a30; }
+.song-box {
+  background: linear-gradient(90deg, #e3f6ff, #ffe3f3);
+  border: 3px dashed var(--purple); border-radius: 22px;
+  padding: 18px 22px;
+}
+.song-box .video-label { text-align: center; }
+.song-box audio { width: 100%; margin: 6px 0 12px; }
+.song-lyrics p {
+  text-align: center; font-size: 17.5px; line-height: 1.75; font-weight: 700; color: #4a3b66;
+}

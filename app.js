@@ -10,6 +10,7 @@
   var storyBody = document.getElementById("storyBody");
   var storyMoral = document.getElementById("storyMoral");
   var moralBox = document.querySelector(".moral-box");
+  var storyMedia = document.getElementById("storyMedia");
   var readBtn = document.getElementById("readBtn");
   var stopBtn = document.getElementById("stopBtn");
   var currentStory = null;
@@ -86,6 +87,8 @@
       return p;
     });
 
+    renderMedia(story);
+
     homeView.hidden = true;
     storyView.hidden = false;
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -113,9 +116,73 @@
     moralObserver.observe(moralBox);
   }
 
+  /* ---------- Videos and song (only on stories that have them) ---------- */
+  function stopMedia() {
+    storyMedia.querySelectorAll("video, audio").forEach(function (el) {
+      el.pause();
+    });
+  }
+
+  function renderMedia(story) {
+    storyMedia.innerHTML = "";
+
+    if (story.videos && story.videos.length) {
+      var heading = document.createElement("h3");
+      heading.className = "media-heading";
+      heading.textContent = "🎬 Watch the story!";
+      storyMedia.appendChild(heading);
+
+      story.videos.forEach(function (v) {
+        var card = document.createElement("div");
+        card.className = "video-card";
+        var label = document.createElement("div");
+        label.className = "video-label";
+        label.textContent = v.label;
+        var video = document.createElement("video");
+        video.src = v.src;
+        video.controls = true;
+        video.playsInline = true;
+        video.preload = "metadata";
+        card.appendChild(label);
+        card.appendChild(video);
+        storyMedia.appendChild(card);
+      });
+    }
+
+    if (story.song) {
+      var box = document.createElement("div");
+      box.className = "song-box";
+
+      var songTitle = document.createElement("div");
+      songTitle.className = "video-label";
+      songTitle.textContent = "🎵 Sing along — " + story.song.title;
+
+      var audio = document.createElement("audio");
+      audio.src = story.song.src;
+      audio.controls = true;
+      audio.preload = "metadata";
+
+      box.appendChild(songTitle);
+      box.appendChild(audio);
+
+      if (story.song.lyrics && story.song.lyrics.length) {
+        var lyrics = document.createElement("div");
+        lyrics.className = "song-lyrics";
+        story.song.lyrics.forEach(function (line) {
+          var lp = document.createElement("p");
+          lp.textContent = line;
+          lyrics.appendChild(lp);
+        });
+        box.appendChild(lyrics);
+      }
+      storyMedia.appendChild(box);
+    }
+  }
+
   /* ---------- Back to the list ---------- */
   function goHome() {
     stopReading();
+    stopMedia();
     storyView.hidden = true;
     homeView.hidden = false;
     window.scrollTo({ top: 0, behavior: "instant" });
