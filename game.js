@@ -57,9 +57,25 @@
     }
   }
   function sfxMeow(when) {
-    // Little synthesized "mew": slides down, then a shorter happy chirp.
-    tone(920, 540, 0.16, "sawtooth", 0.045, when);
-    tone(980, 700, 0.11, "sawtooth", 0.04, when + 0.15);
+    // Clear synthesized "meow": rises then slides down (the classic
+    // me-ow shape), then a shorter happy chirp. Played on every release.
+    tone(620, 940, 0.09, "sawtooth", 0.075, when);
+    tone(940, 480, 0.17, "sawtooth", 0.085, when + 0.09);
+    tone(980, 720, 0.11, "triangle", 0.07, when + 0.3);
+  }
+  function sfxKittenVoice() {
+    // Occasionally a freed kitten actually calls out "Inba akka! Meow!"
+    // in a high kitten voice, using the browser's speech voice.
+    if (!soundOn) return;
+    try {
+      if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) return;
+      if (window.speechSynthesis.speaking) return; // never talk over itself
+      var u = new window.SpeechSynthesisUtterance("Inba akka! Meow!");
+      u.pitch = 1.8;  // kitten-high
+      u.rate = 1.05;
+      u.volume = 0.7;
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* speech is a bonus — the meow above always plays */ }
   }
   function sfxRescue() {
     // Cage pop + happy meow + sparkle arpeggio.
@@ -112,7 +128,7 @@
   try { best = parseInt(localStorage.getItem("inbaGameBest") || "0", 10) || 0; } catch (e) { best = 0; }
 
   function reset() {
-    inba = { x: 130, y: GROUND, vy: 0, grounded: true, runPhase: 0, invincible: 0, jumps: 0, jumpBuffer: 0 };
+    inba = { x: 130, y: GROUND, vy: 0, grounded: true, runPhase: 0, invincible: 0, jumps: 0, jumpBuffer: 0, capeLift: 0, capeFlare: 0 };
     obstacles = [];
     freedKittens = [];
     floaters = [];
@@ -168,6 +184,7 @@
       inba.grounded = false;
       inba.jumps = 1;
       inba.jumpBuffer = 0;
+      inba.capeFlare = 13; // cape snaps out as she leaves the ground
       sfxJump(false);
     } else if (inba.jumps < 2) {
       // Super Girl cape double-jump: if a jump looks like it would land
@@ -175,6 +192,7 @@
       inba.vy = DOUBLE_JUMP_V;
       inba.jumps = 2;
       inba.jumpBuffer = 0;
+      inba.capeFlare = 20; // bigger flare for the cape boost
       sfxJump(true);
       burst(inba.x + 22, inba.y - 6, "#ff6b6b", 7);
     } else {
@@ -223,11 +241,17 @@
     ob.freed = true;
     rescued++;
     score += 100;
-    sfxRescue();
+    sfxRescue(); // includes the meow, every time
     freedKittens.push({
       kitten: ob.kitten, x: ob.x + 20, y: GROUND, vy: -9.5, vx: 4.6, phase: 0
     });
     floaters.push({ text: "🎉 " + ob.kitten.name + " saved! +100", x: ob.x, y: GROUND - 130, life: 70 });
+    // Occasionally (about 1 rescue in 4) the kitten calls out
+    // "Inba akka! Meow!" out loud.
+    if (rescued % 5 === 3 || Math.random() < 0.08) {
+      sfxKittenVoice();
+      floaters.push({ text: "🐱 “Inba akka! Meow!”", x: ob.x + 10, y: GROUND - 168, life: 80 });
+    }
     burst(ob.x + 37, GROUND - 60, "#ffd166", 14);
     updateHUD();
   }
@@ -260,9 +284,16 @@
         inba.vy = JUMP_V;
         inba.grounded = false;
         inba.jumps = 1;
+        inba.capeFlare = 13;
         sfxJump(false);
       }
     }
+    // Fluid cape: lift eases toward 1 in the air (cape streams and
+    // ripples) and settles back to 0 on the ground (cape hangs still).
+    var capeTarget = inba.grounded ? 0 : 1;
+    var capeRate = inba.grounded ? 0.06 : 0.14;
+    inba.capeLift += (capeTarget - inba.capeLift) * Math.min(1, capeRate * dt);
+    if (inba.capeFlare > 0) inba.capeFlare = Math.max(0, inba.capeFlare - dt);
     inba.runPhase += dt * (inba.grounded ? 0.32 : 0.08);
     if (inba.invincible > 0) inba.invincible -= dt;
     if (shake > 0) shake = Math.max(0, shake - dt * 0.7);
@@ -708,24 +739,61 @@
     var fKneeX = 26 + legSwing * 0.45, fKneeY = -19;
     var bKneeX = 18 - legSwing * 0.35, bKneeY = -18;
 
-    // cape (red gradient with a darker fold, flowing behind to the left)
-    var wave = Math.sin(frame * 0.18) * 5;
-    var capeGrad = ctx.createLinearGradient(-26, -70, 20, -40);
-    capeGrad.addColorStop(0, "#a31616");
-    capeGrad.addColorStop(0.6, "#d92b2b");
-    capeGrad.addColorStop(1, "#ef4444");
+    // Cape — fluid cloth, driven by inba.capeLift (0 = on the ground,
+    // 1 = flying). On the ground it just hangs down her back, nearly
+    // still. In the air it streams out behind her, lengthens, and a
+    // ripple travels from her shoulders to the tip, growing as it goes;
+    // a jump (capeFlare) makes it snap out with an extra billow.
+    var lift = inba.capeLift || 0;
+    var flare = (inba.capeFlare || 0) / 20; // 0..1, decays after a jump
+    var SEG = 7, topPts = [], botPts = [], ci2, tt;
+    for (ci2 = 0; ci2 <= SEG; ci2++) {
+      tt = ci2 / SEG;
+      // Spine of the cape: hangs down when grounded, levels out and
+      // stretches back as lift rises.
+      var spineX = 19 - tt * (13 + 46 * lift + 10 * flare);
+      var spineY = -71 + tt * (36 * (1 - lift) - 3 * lift)
+        + Math.sin(frame * 0.34 - tt * 5.4) * (0.7 + 6.5 * lift + 3 * flare) * tt
+        + Math.sin(frame * 0.13 - tt * 2.2) * 1.1 * tt * (1 - lift);
+      // Rising stretches it up a touch; falling lets the tip billow up.
+      spineY += inba.grounded ? 0 : (inba.vy > 2 ? -3.5 * tt * lift : 1.5 * tt * lift);
+      var thick = 30 * (1 - tt * 0.45); // cape width, tapering to the tip
+      topPts.push([spineX, spineY]);
+      botPts.push([spineX + 2, spineY + thick]);
+    }
+    var capeGrad = ctx.createLinearGradient(20, -72, topPts[SEG][0], topPts[SEG][1]);
+    capeGrad.addColorStop(0, "#ef4444");
+    capeGrad.addColorStop(0.55, "#d92b2b");
+    capeGrad.addColorStop(1, "#a31616");
     ctx.fillStyle = capeGrad;
     ctx.beginPath();
-    ctx.moveTo(20, -73);
-    ctx.quadraticCurveTo(-16, -64 + wave, -27, -38 + wave);
-    ctx.quadraticCurveTo(-10, -34, 17, -42);
+    ctx.moveTo(topPts[0][0], topPts[0][1]);
+    for (ci2 = 1; ci2 <= SEG; ci2++) ctx.lineTo(topPts[ci2][0], topPts[ci2][1]);
+    for (ci2 = SEG; ci2 >= 0; ci2--) ctx.lineTo(botPts[ci2][0], botPts[ci2][1]);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = "rgba(120,10,10,0.55)"; ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    ctx.moveTo(8, -66);
-    ctx.quadraticCurveTo(-8, -56 + wave, -16, -42 + wave);
-    ctx.stroke();
+    // Fold lines follow the same ripple, so the cloth looks layered.
+    ctx.strokeStyle = "rgba(120,10,10,0.45)"; ctx.lineWidth = 1.5;
+    var foldF;
+    for (foldF = 0.33; foldF < 0.9; foldF += 0.28) {
+      ctx.beginPath();
+      for (ci2 = 0; ci2 <= SEG; ci2++) {
+        tt = ci2 / SEG;
+        var fx2 = topPts[ci2][0] + (botPts[ci2][0] - topPts[ci2][0]) * foldF;
+        var fy2 = topPts[ci2][1] + (botPts[ci2][1] - topPts[ci2][1]) * foldF;
+        if (ci2 === 0) ctx.moveTo(fx2, fy2); else ctx.lineTo(fx2, fy2);
+      }
+      ctx.stroke();
+    }
+    // Bright rim along the flying top edge.
+    if (lift > 0.05) {
+      ctx.strokeStyle = "rgba(255,150,150," + (0.55 * lift).toFixed(2) + ")";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(topPts[0][0], topPts[0][1]);
+      for (ci2 = 1; ci2 <= SEG; ci2++) ctx.lineTo(topPts[ci2][0], topPts[ci2][1]);
+      ctx.stroke();
+    }
 
     // back arm (slightly darker skin, swings opposite)
     ctx.strokeStyle = "#8a4b23";
@@ -911,7 +979,10 @@
   soundBtn.addEventListener("click", function () {
     soundOn = !soundOn;
     soundBtn.textContent = soundOn ? "🔊 Sound: On" : "🔇 Sound: Off";
-    if (!soundOn) bgSong.pause();
+    if (!soundOn) {
+      bgSong.pause();
+      try { if ("speechSynthesis" in window) window.speechSynthesis.cancel(); } catch (e) {}
+    }
     else if (state === "playing") { ensureAudio(); bgSong.play().catch(function () {}); }
   });
 

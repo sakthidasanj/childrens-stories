@@ -16,8 +16,10 @@ original stories and read them one by one.
   where Inba jumps over the funny foxes and frees her kittens from cages,
   with "Inba Super Girl Paattu" playing very softly and distinct sound
   effects for jumping, kitten rescues, fox catches and lost hearts.
-  Snappy jumps, a cape double-jump, and 10 hearts. Linked from the home
-  page and from Inba's story page.
+  Snappy jumps, a cape double-jump, and 10 hearts. Inba's cape hangs
+  still while she runs and streams out fluidly when she jumps; every
+  freed kitten meows, and occasionally one calls out "Inba akka! Meow!"
+  in a little voice. Linked from the home page and from Inba's story page.
 - **Animations everywhere** — drifting clouds, twinkling stars, bobbing
   balloons, bouncing titles, wiggling "Read me" arrows, and a shiny sweep
   across every story picture. Respects `prefers-reduced-motion`.
