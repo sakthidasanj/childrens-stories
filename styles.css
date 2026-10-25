@@ -281,3 +281,37 @@ main { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; paddin
 .song-lyrics p {
   text-align: center; font-size: 17.5px; line-height: 1.75; font-weight: 700; color: #4a3b66;
 }
+
+/* ---------- Home tabs: Stories | Game ---------- */
+.tabs {
+  display: flex; justify-content: center; gap: 12px;
+  max-width: 980px; margin: 10px auto 4px; padding: 0 14px;
+}
+.tab-btn {
+  font-family: "Fredoka", sans-serif; font-weight: 700; font-size: 1.3rem;
+  color: #14467f; background: rgba(255, 255, 255, .75);
+  border: 3px solid #ffd166; border-radius: 999px;
+  padding: 10px 34px; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(20, 70, 127, .12);
+  transition: transform .15s ease, background .15s ease;
+}
+.tab-btn:hover { transform: translateY(-2px); }
+.tab-btn.active {
+  background: linear-gradient(90deg, #ffd166, #ffb703);
+  color: #7a2d12; border-color: #fb8500;
+  box-shadow: 0 8px 18px rgba(251, 133, 0, .3);
+}
+.game-tab { max-width: 980px; margin: 14px auto 6px; padding: 0 14px; text-align: center; }
+.game-tab-title {
+  font-family: "Fredoka", sans-serif; font-weight: 700; font-size: 1.7rem;
+  color: #14467f; margin: 8px 0 4px;
+}
+.game-tab-sub { font-weight: 700; color: #5a6080; margin: 0 auto 14px; max-width: 640px; }
+.game-frame-wrap {
+  border: 4px solid #ffd166; border-radius: 22px; overflow: hidden;
+  box-shadow: 0 10px 24px rgba(20, 70, 127, .18); background: #aee3ff;
+}
+.game-frame-wrap iframe {
+  display: block; width: 100%; height: clamp(430px, 74vh, 740px); border: 0;
+}
+.game-tab-open { margin-top: 14px; }

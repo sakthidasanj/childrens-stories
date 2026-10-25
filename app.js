@@ -16,6 +16,31 @@
   var gameLink = document.getElementById("gameLink");
   var currentStory = null;
 
+  /* ---------- Home tabs: Stories | Game ---------- */
+  var tabStoriesBtn = document.getElementById("tabStoriesBtn");
+  var tabGameBtn = document.getElementById("tabGameBtn");
+  var tabStories = document.getElementById("tabStories");
+  var tabGame = document.getElementById("tabGame");
+  var gameFrame = document.getElementById("gameFrame");
+  function showTab(which) {
+    var stories = which === "stories";
+    tabStories.hidden = !stories;
+    tabGame.hidden = stories;
+    tabStoriesBtn.classList.toggle("active", stories);
+    tabGameBtn.classList.toggle("active", !stories);
+    tabStoriesBtn.setAttribute("aria-selected", stories ? "true" : "false");
+    tabGameBtn.setAttribute("aria-selected", stories ? "false" : "true");
+    if (!stories && gameFrame && !gameFrame.src) {
+      // Load the game only when its tab is first opened, so the song
+      // and sounds never start behind the stories page.
+      gameFrame.src = gameFrame.getAttribute("data-src") || "game.html";
+    }
+  }
+  if (tabStoriesBtn && tabGameBtn) {
+    tabStoriesBtn.addEventListener("click", function () { showTab("stories"); });
+    tabGameBtn.addEventListener("click", function () { showTab("game"); });
+  }
+
   /* ---------- Build the story cards ---------- */
   window.STORIES.forEach(function (story) {
     var card = document.createElement("button");

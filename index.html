@@ -32,18 +32,26 @@
     <p class="hero-sub">Pick a story, little reader! Every tale has a picture, a giggle, and a tiny bit of magic.</p>
   </header>
 
-  <section class="story-grid" id="storyGrid" aria-label="Story list"></section>
+  <!-- ============ TABS: Stories | Game ============ -->
+  <div class="tabs" role="tablist" aria-label="Choose stories or game">
+    <button class="tab-btn active" id="tabStoriesBtn" type="button" role="tab" aria-selected="true" aria-controls="tabStories">📖 Stories</button>
+    <button class="tab-btn" id="tabGameBtn" type="button" role="tab" aria-selected="false" aria-controls="tabGame">🎮 Game</button>
+  </div>
 
-  <section aria-label="Game" style="max-width:980px;margin:26px auto 6px;padding:0 14px;">
-    <a href="game.html" style="display:flex;align-items:center;gap:16px;background:linear-gradient(90deg,#ffe3ec,#fff3c9);border:4px solid #ffd166;border-radius:22px;padding:16px 22px;text-decoration:none;box-shadow:0 8px 20px #14467f22;">
-      <span style="font-size:2.4rem;" aria-hidden="true">🎮🦸‍♀️🐱</span>
-      <span>
-        <span style="display:block;font-family:Fredoka,sans-serif;font-weight:700;font-size:1.35rem;color:#14467f;">Play the Game — Inba: Kitten Rescue!</span>
-        <span style="display:block;font-weight:700;color:#5a6080;margin-top:2px;">Jump over the funny foxes and free Vellai, Mittai &amp; Chinna from their cages — with the Inba song playing!</span>
-      </span>
-      <span style="margin-left:auto;font-family:Fredoka,sans-serif;font-weight:700;font-size:1.2rem;color:#c1272d;" aria-hidden="true">Play&nbsp;→</span>
-    </a>
-  </section>
+  <div id="tabStories" role="tabpanel" aria-label="Stories">
+    <section class="story-grid" id="storyGrid" aria-label="Story list"></section>
+  </div>
+
+  <div id="tabGame" role="tabpanel" aria-label="Game" hidden>
+    <section class="game-tab">
+      <h2 class="game-tab-title">🎮🦸‍♀️🐱 Inba: Kitten Rescue!</h2>
+      <p class="game-tab-sub">Jump over the funny foxes and free the kittens from their cages — with the Inba song playing, and a very special voice cheering you on!</p>
+      <div class="game-frame-wrap">
+        <iframe id="gameFrame" title="Inba: Kitten Rescue game" data-src="game.html" loading="lazy"></iframe>
+      </div>
+      <p class="game-tab-open"><a class="read-btn" href="game.html" style="text-decoration:none;">⛶ Open the game full-page</a></p>
+    </section>
+  </div>
 
   <footer class="footer">
     <p>Made with ❤️ for little readers everywhere · Story Land</p>

@@ -12,6 +12,9 @@ original stories and read them one by one.
   "moral of the story" box at the end.
 - **Read it to me** — a button that reads the story aloud using the
   browser's built-in speech voice, highlighting each paragraph as it goes.
+- **Two tabs on the home page** — 📖 *Stories* and 🎮 *Game*: the game
+  tab embeds *Inba: Kitten Rescue* right in the page (loaded only when
+  the tab is opened), with a full-page option too.
 - **A game!** — *Inba: Kitten Rescue* (`game.html`): a Mario-style runner
   where Inba jumps over the funny foxes and frees her kittens from cages,
   with "Inba Super Girl Paattu" playing very softly and distinct sound
