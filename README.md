@@ -48,10 +48,10 @@ original stories and read them one by one.
 
 All stories are original, written for this site, for ages 3–8:
 
-1. **Milo, the Brave Little Fox** — being brave for a friend.
-2. **Tito, the Singing Turtle** — everyone's song is special.
-3. **Pippa and the Rainbow Kite** — sharing doubles happiness.
-4. **Nila and the Moon's Lost Star** — small friends, big teamwork.
+1. **Inba, the Brave Little Fox** — being brave for a friend.
+2. **Inba, the Singing Turtle** — everyone's song is special.
+3. **Inba and the Rainbow Kite** — sharing doubles happiness.
+4. **Inba and the Moon's Lost Star** — small friends, big teamwork.
 5. **Inba and Her Poonai Kutties** — Super Girl Inba saves her three kittens
    from two funny foxes. This story also has **three short videos** and a
    **Tamil sing-along song** ("Inba Super Girl Paattu") on its page.
