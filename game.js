@@ -30,6 +30,32 @@
       praiseAudios.push(pa);
     } catch (e) { /* clip unavailable — praise just stays silent */ }
   }
+  // Sakthidasan's OWN recorded MEOW clips (8 takes, recorded on his
+  // phone 2026-10-25). One plays at random on EVERY kitten rescue.
+  var MEOW_CLIPS = [
+    "media/meow-1.mp3", "media/meow-2.mp3", "media/meow-3.mp3",
+    "media/meow-4.mp3", "media/meow-5.mp3", "media/meow-6.mp3",
+    "media/meow-7.mp3", "media/meow-8.mp3"
+  ];
+  var meowAudios = [];
+  for (var mi = 0; mi < MEOW_CLIPS.length; mi++) {
+    try {
+      var ma = new Audio(MEOW_CLIPS[mi]);
+      ma.preload = "auto";
+      ma.volume = 0.9;
+      meowAudios.push(ma);
+    } catch (e) { /* clip unavailable — synthesized meow is the fallback */ }
+  }
+  function playRandomClip(pool) {
+    if (!soundOn || !pool.length) return false;
+    var clip = pool[Math.floor(Math.random() * pool.length)];
+    try {
+      clip.currentTime = 0;
+      var p = clip.play();
+      if (p && p.catch) p.catch(function () {});
+      return true;
+    } catch (e) { return false; }
+  }
 
   /* ================= Sound effects (WebAudio) ================= */
   var audioCtx = null;
@@ -69,8 +95,9 @@
     }
   }
   function sfxMeow(when) {
-    // Clear synthesized "meow": rises then slides down (the classic
-    // me-ow shape), then a shorter happy chirp. Played on every release.
+    // Synthesized "meow" — FALLBACK ONLY, used if none of his recorded
+    // meow clips can play: rises then slides down (the classic me-ow
+    // shape), then a shorter happy chirp.
     tone(620, 940, 0.09, "sawtooth", 0.075, when);
     tone(940, 480, 0.17, "sawtooth", 0.085, when + 0.09);
     tone(980, 720, 0.11, "triangle", 0.07, when + 0.3);
@@ -79,19 +106,13 @@
     // A freed kitten praises Inba in Sakthidasan's OWN recorded voice:
     // one of his 7 praise clips ("Inba akka vaazhga!" and friends),
     // picked at random. Real recordings — never an automated voice.
-    // If a clip can't load, this stays silent — the meow still plays.
-    if (!soundOn || !praiseAudios.length) return;
-    var clip = praiseAudios[Math.floor(Math.random() * praiseAudios.length)];
-    try {
-      clip.currentTime = 0;
-      var p = clip.play();
-      if (p && p.catch) p.catch(function () {});
-    } catch (e) { /* recording not loaded yet */ }
+    playRandomClip(praiseAudios);
   }
   function sfxRescue() {
-    // Cage pop + happy meow + sparkle arpeggio.
+    // Cage pop + one of his recorded meows (random, every rescue) +
+    // sparkle arpeggio.
     tone(220, 440, 0.08, "square", 0.1);
-    sfxMeow(0.05);
+    if (!playRandomClip(meowAudios)) sfxMeow(0.05);
     tone(523, 523, 0.11, "sine", 0.15, 0.05);
     tone(659, 659, 0.11, "sine", 0.15, 0.14);
     tone(784, 784, 0.12, "sine", 0.15, 0.23);
@@ -964,7 +985,10 @@
     soundBtn.textContent = soundOn ? "🔊 Sound: On" : "🔇 Sound: Off";
     if (!soundOn) {
       bgSong.pause();
-      try { for (var qi = 0; qi < praiseAudios.length; qi++) praiseAudios[qi].pause(); } catch (e) {}
+      try {
+        for (var qi = 0; qi < praiseAudios.length; qi++) praiseAudios[qi].pause();
+        for (var qj = 0; qj < meowAudios.length; qj++) meowAudios[qj].pause();
+      } catch (e) {}
     }
     else if (state === "playing") { ensureAudio(); bgSong.play().catch(function () {}); }
   });

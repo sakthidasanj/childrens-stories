@@ -20,9 +20,11 @@ original stories and read them one by one.
   the run is endless, and a fox catch just tells Inba to be careful.
   Inba's cape hangs
   still while she runs and streams out fluidly when she jumps; every
-  freed kitten meows, and less often one praises her in Sakthidasan's
-  own recorded voice — one of his 7 praise clips
-  (`media/praise-1.mp3` … `media/praise-7.mp3`), picked at random.
+  freed kitten meows with one of Sakthidasan's own recorded meow
+  clips (`media/meow-1.mp3` … `media/meow-8.mp3`, a random one every
+  rescue), and less often one praises her in his own recorded voice —
+  one of his 7 praise clips (`media/praise-1.mp3` …
+  `media/praise-7.mp3`), also picked at random.
   Linked from the home page and from Inba's story page.
 - **Animations everywhere** — drifting clouds, twinkling stars, bobbing
   balloons, bouncing titles, wiggling "Read me" arrows, and a shiny sweep
