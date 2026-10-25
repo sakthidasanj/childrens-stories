@@ -430,22 +430,126 @@
     ctx.closePath();
   }
 
+  /* ============ Forest background (all MUTED / low contrast, so the
+     gameplay characters stay bright and easy to see) ============ */
+  function bgRand(seed) {
+    var x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+    return x - Math.floor(x);
+  }
+  function drawPine(x, baseY, h, col) {
+    ctx.fillStyle = "rgba(122,96,74,0.75)";
+    ctx.fillRect(x - h * 0.045, baseY - h * 0.18, h * 0.09, h * 0.18);
+    ctx.fillStyle = col;
+    for (var t = 0; t < 3; t++) {
+      var wTier = h * (0.62 - t * 0.15), yTier = baseY - h * 0.12 - t * h * 0.26;
+      ctx.beginPath();
+      ctx.moveTo(x - wTier / 2, yTier);
+      ctx.lineTo(x, yTier - h * 0.34);
+      ctx.lineTo(x + wTier / 2, yTier);
+      ctx.closePath(); ctx.fill();
+    }
+  }
+  function drawLeafyTree(x, baseY, h, col, col2) {
+    ctx.strokeStyle = "rgba(122,96,74,0.8)";
+    ctx.lineWidth = h * 0.07; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x, baseY); ctx.quadraticCurveTo(x + h * 0.05, baseY - h * 0.4, x, baseY - h * 0.58); ctx.stroke();
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(x, baseY - h * 0.72, h * 0.3, 0, 6.29); ctx.fill();
+    ctx.beginPath(); ctx.arc(x - h * 0.24, baseY - h * 0.58, h * 0.2, 0, 6.29); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + h * 0.24, baseY - h * 0.6, h * 0.21, 0, 6.29); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.beginPath(); ctx.arc(x - h * 0.1, baseY - h * 0.8, h * 0.16, 0, 6.29); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + h * 0.14, baseY - h * 0.68, h * 0.13, 0, 6.29); ctx.fill();
+  }
+  function drawPalmTree(x, baseY, h, col) {
+    ctx.strokeStyle = "rgba(130,104,78,0.8)";
+    ctx.lineWidth = h * 0.06; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x, baseY); ctx.quadraticCurveTo(x + h * 0.1, baseY - h * 0.55, x + h * 0.24, baseY - h * 0.92); ctx.stroke();
+    var tx = x + h * 0.24, ty = baseY - h * 0.92;
+    ctx.strokeStyle = col; ctx.lineWidth = h * 0.045;
+    for (var f = 0; f < 5; f++) {
+      var ang = -0.3 - f * 0.5;
+      ctx.beginPath(); ctx.moveTo(tx, ty);
+      ctx.quadraticCurveTo(tx + Math.cos(ang) * h * 0.3, ty + Math.sin(ang) * h * 0.22 - h * 0.06,
+        tx + Math.cos(ang) * h * 0.44, ty + Math.sin(ang) * h * 0.3 + h * 0.12);
+      ctx.stroke();
+    }
+  }
+  function drawDeer(x, baseY, s, col) {
+    ctx.save(); ctx.translate(x, baseY); ctx.scale(s, s);
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.ellipse(0, -20, 17, 10, 0, 0, 6.29); ctx.fill(); // body
+    ctx.fillRect(-14, -20, 3.4, 18); ctx.fillRect(-8, -20, 3.4, 18);
+    ctx.fillRect(8, -20, 3.4, 18); ctx.fillRect(13, -20, 3.4, 18);     // legs
+    ctx.beginPath(); ctx.ellipse(16, -33, 6.5, 5, -0.5, 0, 6.29); ctx.fill(); // head
+    ctx.fillRect(10, -30, 9, 4);                                        // neck
+    ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.lineCap = "round";    // antlers
+    ctx.beginPath(); ctx.moveTo(18, -38); ctx.lineTo(21, -46); ctx.moveTo(19.5, -42); ctx.lineTo(24, -44); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,0.5)";                            // spots
+    ctx.beginPath(); ctx.arc(-4, -23, 1.8, 0, 6.29); ctx.fill();
+    ctx.beginPath(); ctx.arc(3, -19, 1.6, 0, 6.29); ctx.fill();
+    ctx.restore();
+  }
+  function drawRabbit(x, baseY, s, col, hop) {
+    ctx.save(); ctx.translate(x, baseY - hop); ctx.scale(s, s);
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.ellipse(0, -7, 10, 6.5, 0, 0, 6.29); ctx.fill();
+    ctx.beginPath(); ctx.arc(8, -12, 5, 0, 6.29); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(6.5, -20, 1.9, 6, -0.15, 0, 6.29); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(10.5, -20, 1.9, 6, 0.15, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.65)";
+    ctx.beginPath(); ctx.arc(-9.5, -8, 2.8, 0, 6.29); ctx.fill();       // tail
+    ctx.restore();
+  }
+  function drawForestMan(x, baseY, shirt, cheer) {
+    var bounce = cheer ? Math.abs(Math.sin(frame * 0.18)) * 4 : 0;
+    ctx.save(); ctx.translate(x, baseY - bounce);
+    ctx.fillStyle = "rgba(70,50,35,0.85)";
+    ctx.fillRect(-2.4, -16, 4.8, 16);                                    // legs
+    ctx.fillStyle = shirt;
+    rr(-7, -34, 14, 20, 5); ctx.fill();                                 // tunic
+    ctx.strokeStyle = shirt; ctx.lineWidth = 3.6; ctx.lineCap = "round";
+    ctx.beginPath();
+    if (cheer) { ctx.moveTo(-6, -30); ctx.lineTo(-12, -44); ctx.moveTo(6, -30); ctx.lineTo(12, -44); }
+    else { ctx.moveTo(-6, -30); ctx.lineTo(-10, -18); ctx.moveTo(6, -30); ctx.lineTo(10, -18); }
+    ctx.stroke();
+    ctx.fillStyle = "#8a5a3b";
+    ctx.beginPath(); ctx.arc(0, -41, 6.4, 0, 6.29); ctx.fill();         // head
+    ctx.fillStyle = "rgba(60,40,25,0.9)";
+    ctx.beginPath(); ctx.arc(0, -43.5, 6.4, Math.PI, 0); ctx.fill();    // hair cap
+    ctx.restore();
+  }
+  function drawShoutBubble(x, y, text) {
+    ctx.save();
+    ctx.font = "700 15px Fredoka, sans-serif";
+    var wText = ctx.measureText(text).width + 22;
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    rr(x - wText / 2, y - 34, wText, 27, 12); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x - 5, y - 8); ctx.lineTo(x + 7, y - 8); ctx.lineTo(x + 1, y + 2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#7a4a21";
+    ctx.textAlign = "center";
+    ctx.fillText(text, x, y - 15);
+    ctx.restore();
+  }
+
   function drawBackground() {
+    // Pale hazy sky — deliberately washed out
     var sky = ctx.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0, "#8fd6ff");
-    sky.addColorStop(0.7, "#cdeffb");
-    sky.addColorStop(1, "#fdf3c9");
+    sky.addColorStop(0, "#bfd9e8");
+    sky.addColorStop(0.65, "#dfead9");
+    sky.addColorStop(1, "#f2ecd7");
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, W, H);
 
-    // Sun
-    ctx.fillStyle = "#ffd93b";
+    // Pale sun
+    ctx.fillStyle = "rgba(245,226,154,0.75)";
     ctx.beginPath(); ctx.arc(862, 74, 34, 0, 6.29); ctx.fill();
-    ctx.fillStyle = "#ffe97a";
+    ctx.fillStyle = "rgba(250,238,178,0.8)";
     ctx.beginPath(); ctx.arc(862, 74, 26, 0, 6.29); ctx.fill();
 
-    // Clouds (slow parallax)
-    ctx.fillStyle = "#ffffff";
+    // Clouds (slow parallax), softer
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
     var ci, cx;
     for (ci = 0; ci < 5; ci++) {
       cx = ((ci * 230 + 60 - frame * 0.35) % (W + 240) + (W + 240)) % (W + 240) - 120;
@@ -456,9 +560,88 @@
       ctx.arc(cx - 25, cy + 5, 15, 0, 6.29);
       ctx.fill();
     }
+    // Birds — little muted "m" shapes drifting by
+    ctx.strokeStyle = "rgba(90,110,125,0.55)"; ctx.lineWidth = 2; ctx.lineCap = "round";
+    for (var bi = 0; bi < 3; bi++) {
+      var bx = ((bi * 340 + 140 - frame * 0.55) % (W + 160) + (W + 160)) % (W + 160) - 80;
+      var by = 60 + bi * 26 + Math.sin(frame * 0.05 + bi * 2) * 4, flap = Math.sin(frame * 0.3 + bi) * 3;
+      ctx.beginPath();
+      ctx.moveTo(bx - 8, by + flap); ctx.quadraticCurveTo(bx - 3, by - 3, bx, by);
+      ctx.quadraticCurveTo(bx + 3, by - 3, bx + 8, by + flap);
+      ctx.stroke();
+    }
 
-    // Hills (slower scroll)
-    ctx.fillStyle = "#b5e48c";
+    // FAR MOUNTAINS — blue-grey, hazy, very slow
+    var mScroll = frame * speed * 0.06, mTile = 620, mOff = -(mScroll % mTile), mBase = Math.floor(mScroll / mTile);
+    for (var mi = -1; mi < W / mTile + 2; mi++) {
+      var mt = mBase + mi, mx = mOff + mi * mTile;
+      var h1 = 120 + bgRand(mt * 3 + 1) * 70, w1 = 300 + bgRand(mt * 3 + 2) * 80;
+      ctx.fillStyle = "rgba(150,175,198,0.55)";
+      ctx.beginPath();
+      ctx.moveTo(mx, GROUND - 40); ctx.lineTo(mx + w1 / 2, GROUND - 40 - h1); ctx.lineTo(mx + w1, GROUND - 40); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      ctx.beginPath();
+      ctx.moveTo(mx + w1 / 2 - w1 * 0.11, GROUND - 40 - h1 + h1 * 0.22);
+      ctx.lineTo(mx + w1 / 2, GROUND - 40 - h1);
+      ctx.lineTo(mx + w1 / 2 + w1 * 0.11, GROUND - 40 - h1 + h1 * 0.22);
+      ctx.lineTo(mx + w1 / 2, GROUND - 40 - h1 + h1 * 0.13);
+      ctx.closePath(); ctx.fill();
+      var h2 = 80 + bgRand(mt * 5 + 3) * 50;
+      ctx.fillStyle = "rgba(140,168,150,0.5)";
+      ctx.beginPath();
+      ctx.moveTo(mx + w1 * 0.45, GROUND - 40); ctx.lineTo(mx + w1 * 0.45 + 130, GROUND - 40 - h2); ctx.lineTo(mx + w1 * 0.45 + 260, GROUND - 40); ctx.closePath(); ctx.fill();
+    }
+
+    // LAKE — a calm muted band in the middle distance, slow scroll
+    var lScroll = frame * speed * 0.12, lTile = 1500, lOff = -(lScroll % lTile);
+    for (var li = -1; li < 2; li++) {
+      var lx = lOff + li * lTile + 240;
+      ctx.fillStyle = "rgba(164,200,214,0.75)";
+      ctx.beginPath(); ctx.ellipse(lx + 260, GROUND - 26, 300, 26, 0, 0, 6.29); ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.lineWidth = 2;
+      for (var lw = 0; lw < 4; lw++) {
+        var shimmer = Math.sin(frame * 0.04 + lw * 1.7) * 6;
+        ctx.beginPath();
+        ctx.moveTo(lx + 90 + lw * 95 + shimmer, GROUND - 32 + lw * 5);
+        ctx.lineTo(lx + 140 + lw * 95 + shimmer, GROUND - 32 + lw * 5);
+        ctx.stroke();
+      }
+      // a deer drinking at the lake edge
+      drawDeer(lx + 60, GROUND - 18, 0.9, "rgba(166,124,82,0.8)");
+    }
+
+    // FAR TREE LINE — soft green shapes, gentle parallax
+    var fScroll = frame * speed * 0.2, fTile = 460, fOff = -(fScroll % fTile), fBase = Math.floor(fScroll / fTile);
+    for (var fi = -1; fi < W / fTile + 2; fi++) {
+      var ft = fBase + fi, fx0 = fOff + fi * fTile;
+      drawPine(fx0 + 60 + bgRand(ft * 7 + 1) * 60, GROUND - 30, 120 + bgRand(ft * 7 + 2) * 40, "rgba(148,178,138,0.65)");
+      drawLeafyTree(fx0 + 230 + bgRand(ft * 7 + 3) * 60, GROUND - 30, 105 + bgRand(ft * 7 + 4) * 35, "rgba(154,184,142,0.65)", "rgba(170,198,158,0.65)");
+      drawPine(fx0 + 380 + bgRand(ft * 7 + 5) * 50, GROUND - 30, 135 + bgRand(ft * 7 + 6) * 40, "rgba(143,172,132,0.65)");
+    }
+
+    // NEAR FOREST — bigger trees (pine, leafy, palm), rabbits, and the
+    // forest men who cheer for Inba. Still muted, slightly stronger.
+    var nScroll = frame * speed * 0.45, nTile = 780, nOff = -(nScroll % nTile), nBase = Math.floor(nScroll / nTile);
+    for (var ni = -1; ni < W / nTile + 2; ni++) {
+      var nt = nBase + ni, nx = nOff + ni * nTile;
+      drawPalmTree(nx + 90 + bgRand(nt * 11 + 1) * 50, GROUND - 6, 150 + bgRand(nt * 11 + 2) * 40, "rgba(110,152,102,0.8)");
+      drawLeafyTree(nx + 330 + bgRand(nt * 11 + 3) * 60, GROUND - 6, 165 + bgRand(nt * 11 + 4) * 45, "rgba(116,160,106,0.82)", "rgba(138,178,124,0.82)");
+      drawPine(nx + 560 + bgRand(nt * 11 + 5) * 60, GROUND - 6, 185 + bgRand(nt * 11 + 6) * 50, "rgba(108,152,100,0.82)");
+      // a rabbit near the leafy tree, hopping softly
+      var hop = Math.abs(Math.sin(frame * 0.09 + nt)) * 4;
+      drawRabbit(nx + 265 + bgRand(nt * 11 + 7) * 30, GROUND - 4, 0.95, "rgba(168,158,148,0.85)", hop);
+      // a forest man between the trees — he cheers in turns: his arms
+      // go up and his shout bubble appears for a stretch each cycle
+      var manX = nx + 665, shoutPhase = (frame + nt * 137) % 560;
+      var cheering = shoutPhase < 170;
+      drawForestMan(manX, GROUND - 4, ["#b0714f", "#7d8c5c", "#97785a"][Math.abs(nt) % 3], cheering);
+      if (cheering && manX > 40 && manX < W - 40) {
+        drawShoutBubble(manX, GROUND - 66, "Inba akka vaazhga!");
+      }
+    }
+
+    // Soft green hills right behind the track
+    ctx.fillStyle = "rgba(168,198,148,0.55)";
     var hx = -((frame * speed * 0.25) % 480);
     for (var hxi = hx; hxi < W + 480; hxi += 480) {
       ctx.beginPath();
@@ -466,13 +649,13 @@
       ctx.fill();
     }
 
-    // Ground
-    ctx.fillStyle = "#7ec850";
+    // Ground — muted grass so Inba and the animals pop against it
+    ctx.fillStyle = "#93bd76";
     ctx.fillRect(0, GROUND, W, H - GROUND);
-    ctx.fillStyle = "#68b53e";
+    ctx.fillStyle = "#83ac66";
     ctx.fillRect(0, GROUND, W, 8);
     // Grass tufts scrolling
-    ctx.strokeStyle = "#4f9c2f";
+    ctx.strokeStyle = "rgba(96,142,72,0.8)";
     ctx.lineWidth = 2.5;
     var off = (frame * speed) % 52;
     for (var gx = -off; gx < W + 52; gx += 52) {
@@ -483,14 +666,14 @@
       ctx.lineTo(gx + 13, GROUND + 4);
       ctx.stroke();
     }
-    // Little flowers
+    // Little flowers — paler now
     var foff = (frame * speed) % 170;
-    ctx.fillStyle = "#ff8fab";
+    ctx.fillStyle = "rgba(240,168,186,0.8)";
     for (var fx2 = -foff + 40; fx2 < W + 170; fx2 += 170) {
       ctx.beginPath(); ctx.arc(fx2, GROUND + 34, 4, 0, 6.29); ctx.fill();
-      ctx.fillStyle = "#ffd166";
+      ctx.fillStyle = "rgba(240,205,120,0.8)";
       ctx.beginPath(); ctx.arc(fx2 + 26, GROUND + 52, 4, 0, 6.29); ctx.fill();
-      ctx.fillStyle = "#ff8fab";
+      ctx.fillStyle = "rgba(240,168,186,0.8)";
     }
   }
 

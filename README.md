@@ -19,6 +19,10 @@ original stories and read them one by one.
   where Inba jumps over the funny foxes and frees her kittens from cages,
   with "Inba Super Girl Paattu" playing very softly and distinct sound
   effects for jumping, kitten rescues and fox catches.
+  She runs through a soft, muted forest — mountains, a lake with a
+  deer, pine, leafy and palm trees, rabbits and birds — where the
+  forest men cheer "Inba akka vaazhga!" from between the trees.
+  All background colours are kept pale so the gameplay stands out.
   Snappy jumps and a cape double-jump. There are no lives or hearts —
   the run is endless, and a fox catch just tells Inba to be careful —
   in Sakthidasan's own recorded voice, one of his 9 "be careful!"
