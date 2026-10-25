@@ -12,6 +12,10 @@ original stories and read them one by one.
   "moral of the story" box at the end.
 - **Read it to me** — a button that reads the story aloud using the
   browser's built-in speech voice, highlighting each paragraph as it goes.
+- **A game!** — *Inba: Kitten Rescue* (`game.html`): a Mario-style runner
+  where Inba jumps over the funny foxes and frees her kittens from cages,
+  with "Inba Super Girl Paattu" playing softly and cheerful sound effects.
+  Linked from the home page and from Inba's story page.
 - **Animations everywhere** — drifting clouds, twinkling stars, bobbing
   balloons, bouncing titles, wiggling "Read me" arrows, and a shiny sweep
   across every story picture. Respects `prefers-reduced-motion`.
@@ -52,4 +56,5 @@ It is a plain static site — no build step.
 | `styles.css` | Colors, layout, and all animations |
 | `stories.js` | The story library (edit this to add stories) |
 | `app.js` | Card rendering, story view, read-aloud |
+| `game.html` / `game.js` | Inba: Kitten Rescue game |
 | `images/` | One illustration per story |

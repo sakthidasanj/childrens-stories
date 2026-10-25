@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Inba: Kitten Rescue — Story Land Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Nunito", system-ui, sans-serif;
+    background: linear-gradient(180deg, #aee3ff 0%, #d8f3ff 55%, #fff7d6 100%);
+    min-height: 100vh;
+    color: #33396b;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 10px 30px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .topbar {
+    width: 100%;
+    max-width: 980px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .back-btn {
+    font-family: "Fredoka", sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #fff;
+    background: #ff6b9d;
+    border: none;
+    border-radius: 999px;
+    padding: 9px 18px;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 4px 0 #d94f7e;
+  }
+  .back-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #d94f7e; }
+  h1.game-title {
+    font-family: "Fredoka", sans-serif;
+    font-size: clamp(1.4rem, 4.5vw, 2.1rem);
+    font-weight: 700;
+    color: #14467f;
+  }
+  h1.game-title .accent { color: #c1272d; }
+  .hud {
+    width: 100%;
+    max-width: 980px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 12px 0 10px;
+  }
+  .hud-chip {
+    background: #ffffffcc;
+    border: 3px solid #ffd166;
+    border-radius: 999px;
+    padding: 6px 16px;
+    font-family: "Fredoka", sans-serif;
+    font-weight: 600;
+    font-size: 1.05rem;
+    box-shadow: 0 3px 8px #14467f22;
+  }
+  .hud-chip.hearts { border-color: #ff8fab; letter-spacing: 2px; }
+  .hud-spacer { flex: 1; }
+  .icon-btn {
+    font-family: "Fredoka", sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    border: 3px solid #90caf9;
+    background: #ffffffcc;
+    color: #14467f;
+    border-radius: 999px;
+    padding: 5px 15px;
+    cursor: pointer;
+  }
+  .stage {
+    position: relative;
+    width: 100%;
+    max-width: 980px;
+    border-radius: 22px;
+    overflow: hidden;
+    border: 5px solid #14467f;
+    box-shadow: 0 12px 30px #14467f33;
+    background: #aee3ff;
+    touch-action: manipulation;
+  }
+  canvas { display: block; width: 100%; height: auto; }
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 10px;
+    background: #14467f55;
+    backdrop-filter: blur(2px);
+    padding: 16px;
+  }
+  .overlay[hidden] { display: none; }
+  .overlay .big { font-size: clamp(2.2rem, 8vw, 3.6rem); }
+  .overlay h2 {
+    font-family: "Fredoka", sans-serif;
+    color: #fff;
+    font-size: clamp(1.5rem, 5.5vw, 2.4rem);
+    text-shadow: 0 3px 0 #14467f88;
+  }
+  .overlay p {
+    color: #fff;
+    font-weight: 700;
+    font-size: clamp(0.95rem, 3.4vw, 1.15rem);
+    max-width: 560px;
+    text-shadow: 0 2px 4px #14467f99;
+    line-height: 1.45;
+  }
+  .play-btn {
+    font-family: "Fredoka", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.15rem, 4.5vw, 1.5rem);
+    color: #fff;
+    background: #2fbf71;
+    border: none;
+    border-radius: 999px;
+    padding: 13px 38px;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #1e9455;
+    margin-top: 6px;
+  }
+  .play-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #1e9455; }
+  .hint {
+    margin-top: 12px;
+    font-weight: 700;
+    color: #14467f;
+    font-size: 1rem;
+    text-align: center;
+  }
+  .hint kbd {
+    background: #fff;
+    border: 2px solid #14467f55;
+    border-bottom-width: 4px;
+    border-radius: 7px;
+    padding: 1px 8px;
+    font-family: "Fredoka", sans-serif;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="back-btn" href="index.html">⬅ Story Land</a>
+  <h1 class="game-title">🦸‍♀️ Inba: <span class="accent">Kitten Rescue</span></h1>
+</div>
+
+<div class="hud" aria-label="Game status">
+  <span class="hud-chip hearts" id="heartsChip" title="Hearts">❤️❤️❤️</span>
+  <span class="hud-chip" id="kittensChip" title="Kittens rescued">🐱 Rescued: 0</span>
+  <span class="hud-chip" id="scoreChip" title="Score">⭐ Score: 0</span>
+  <span class="hud-spacer"></span>
+  <button class="icon-btn" id="soundBtn" type="button">🔊 Sound: On</button>
+  <button class="icon-btn" id="restartBtn" type="button">↻ Restart</button>
+</div>
+
+<div class="stage" id="stage">
+  <canvas id="game" width="960" height="540" aria-label="Inba Kitten Rescue game area"></canvas>
+
+  <div class="overlay" id="startOverlay">
+    <div class="big" aria-hidden="true">🦸‍♀️🐱🦊</div>
+    <h2>Help Inba rescue her poonai kutties!</h2>
+    <p>Jump over the funny foxes — Kuttai Nari and Neela Nari.<br />
+    Run past a cage and the kitten inside pops free! 🎉<br />
+    Press <b>Space</b> or <b>tap</b> to jump.</p>
+    <button class="play-btn" id="playBtn" type="button">▶ Play</button>
+  </div>
+
+  <div class="overlay" id="overOverlay" hidden>
+    <div class="big" aria-hidden="true">🌟</div>
+    <h2 id="overTitle">Great running, Inba!</h2>
+    <p id="overStats">Score: 0 · Kittens rescued: 0</p>
+    <button class="play-btn" id="againBtn" type="button">↻ Play again</button>
+  </div>
+</div>
+
+<p class="hint"><kbd>Space</kbd> / <kbd>↑</kbd> / tap = jump &nbsp;·&nbsp; 🎵 “Inba Super Girl Paattu” plays softly while you run</p>
+
+<audio id="bgSong" src="media/inba-super-girl-song.mp3" loop preload="auto"></audio>
+<script src="game.js"></script>
+</body>
+</html>

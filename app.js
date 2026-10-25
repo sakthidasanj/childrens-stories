@@ -13,6 +13,7 @@
   var storyMedia = document.getElementById("storyMedia");
   var readBtn = document.getElementById("readBtn");
   var stopBtn = document.getElementById("stopBtn");
+  var gameLink = document.getElementById("gameLink");
   var currentStory = null;
 
   /* ---------- Build the story cards ---------- */
@@ -88,6 +89,7 @@
     });
 
     renderMedia(story);
+    if (gameLink) gameLink.hidden = story.id !== "inba-poonai-kutties";
 
     homeView.hidden = true;
     storyView.hidden = false;
