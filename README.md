@@ -17,7 +17,9 @@ original stories and read them one by one.
   with "Inba Super Girl Paattu" playing very softly and distinct sound
   effects for jumping, kitten rescues and fox catches.
   Snappy jumps and a cape double-jump. There are no lives or hearts —
-  the run is endless, and a fox catch just tells Inba to be careful.
+  the run is endless, and a fox catch just tells Inba to be careful —
+  in Sakthidasan's own recorded voice, one of his 9 "be careful!"
+  clips (`media/careful-1.mp3` … `media/careful-9.mp3`) at random.
   Inba's cape hangs
   still while she runs and streams out fluidly when she jumps; every
   freed kitten meows with one of Sakthidasan's own recorded meow

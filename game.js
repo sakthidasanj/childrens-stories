@@ -46,6 +46,23 @@
       meowAudios.push(ma);
     } catch (e) { /* clip unavailable — synthesized meow is the fallback */ }
   }
+  // Sakthidasan's OWN recorded "Be careful!" clips (9 takes, recorded
+  // on his phone 2026-10-25 — laughs and all). One plays at random
+  // whenever a fox catches Inba.
+  var CAREFUL_CLIPS = [
+    "media/careful-1.mp3", "media/careful-2.mp3", "media/careful-3.mp3",
+    "media/careful-4.mp3", "media/careful-5.mp3", "media/careful-6.mp3",
+    "media/careful-7.mp3", "media/careful-8.mp3", "media/careful-9.mp3"
+  ];
+  var carefulAudios = [];
+  for (var ci = 0; ci < CAREFUL_CLIPS.length; ci++) {
+    try {
+      var ca = new Audio(CAREFUL_CLIPS[ci]);
+      ca.preload = "auto";
+      ca.volume = 0.9;
+      carefulAudios.push(ca);
+    } catch (e) { /* clip unavailable — tone cue is the fallback */ }
+  }
   function playRandomClip(pool) {
     if (!soundOn || !pool.length) return false;
     var clip = pool[Math.floor(Math.random() * pool.length)];
@@ -125,12 +142,18 @@
     tone(160, 60, 0.22, "sawtooth", 0.16, 0.14);
   }
   function sfxCareful() {
-    // Gentle "be careful!" reminder — two soft attention notes, nothing
-    // scary and no penalty. (There are no lives/hearts to lose.)
+    // Gentle "be careful!" tone cue — FALLBACK ONLY, if none of his
+    // recorded careful clips can play. Two soft attention notes,
+    // nothing scary and no penalty. (There are no lives/hearts to lose.)
     tone(740, 740, 0.1, "triangle", 0.12, 0.16);
     tone(880, 880, 0.14, "triangle", 0.12, 0.28);
   }
-  function sfxHit() { sfxCatch(); sfxCareful(); }
+  function sfxHit() {
+    // Fox-catch yips, then "be careful!" in his OWN recorded voice
+    // (random one of 9 clips); the gentle tone cue is only a fallback.
+    sfxCatch();
+    if (!playRandomClip(carefulAudios)) sfxCareful();
+  }
 
   /* ================= Game state ================= */
   var KITTENS = [
@@ -988,6 +1011,7 @@
       try {
         for (var qi = 0; qi < praiseAudios.length; qi++) praiseAudios[qi].pause();
         for (var qj = 0; qj < meowAudios.length; qj++) meowAudios[qj].pause();
+        for (var qk = 0; qk < carefulAudios.length; qk++) carefulAudios[qk].pause();
       } catch (e) {}
     }
     else if (state === "playing") { ensureAudio(); bgSong.play().catch(function () {}); }
