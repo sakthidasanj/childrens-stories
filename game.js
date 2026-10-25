@@ -13,7 +13,7 @@
   var startOverlay = document.getElementById("startOverlay");
   var soundBtn = document.getElementById("soundBtn");
   var bgSong = document.getElementById("bgSong");
-  bgSong.volume = 0.08; // song sits quietly under the action and the effects
+  bgSong.volume = 0.04; // song sits very quietly under the action (halved again 2026-10-25 at the user's request)
   // Sakthidasan's OWN recorded praise clips for the kittens (7 takes,
   // recorded on his phone 2026-10-25). Played at random, less often.
   var PRAISE_CLIPS = [
