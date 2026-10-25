@@ -156,10 +156,19 @@
   }
 
   /* ================= Game state ================= */
+  // SIX kitten styles — Inba's three kittens plus three friends who
+  // joined the game. Each has its own look AND its own escape style
+  // and escape speed once freed:
+  //   hop    = classic happy hops (medium)      zigzag = scamper (fast)
+  //   tiny   = quick little hops (slower)       dash   = low fast run (fastest)
+  //   leap   = big slow arcs (slower)           twirl  = spins as she hops (medium)
   var KITTENS = [
-    { name: "Vellai", color: "#ffffff", ear: "#ffb6c9", scale: 1.0 },
-    { name: "Mittai", color: "#f5a623", ear: "#ffe0b2", scale: 1.0 },
-    { name: "Chinna", color: "#cfd8dc", ear: "#ffcdd2", scale: 0.78 }
+    { name: "Vellai", color: "#ffffff", ear: "#ffb6c9", scale: 1.0, escape: "hop", vx: 4.6 },
+    { name: "Mittai", color: "#f5a623", ear: "#ffe0b2", scale: 1.0, escape: "zigzag", vx: 5.6 },
+    { name: "Chinna", color: "#cfd8dc", ear: "#ffcdd2", scale: 0.78, escape: "tiny", vx: 3.8 },
+    { name: "Karuppu", color: "#3b3b46", ear: "#8e8ea3", scale: 0.95, escape: "dash", vx: 6.4 },
+    { name: "Pulli", color: "#f3e3c2", ear: "#ffb6c9", scale: 1.02, escape: "leap", vx: 3.9 },
+    { name: "Neelam", color: "#8fa8c8", ear: "#cdd9ea", scale: 0.92, escape: "twirl", vx: 4.9 }
   ];
 
   // Snappier jump: strong gravity + slightly lower launch = high enough to
@@ -173,6 +182,7 @@
   // the run is endless until the player restarts it themselves.
   var inba, obstacles, freedKittens, floaters, particles;
   var rescued, score, speed, frame, spawnIn, kittenCycle, shake;
+  var lastFoxGait = null; // a gallop widens the gap before the next obstacle
 
   function reset() {
     inba = { x: 130, y: GROUND, vy: 0, grounded: true, runPhase: 0, invincible: 0, jumps: 0, jumpBuffer: 0, capeLift: 0, capeFlare: 0 };
@@ -208,15 +218,28 @@
       });
     } else {
       var tall = Math.random() < 0.45;
+      // THREE fox walking styles, each with its own speed range:
+      //   sneak  — low crouch, quick small steps, SLOW (0.7–1.1)
+      //   trot   — the classic run, MEDIUM (1.3–1.7)
+      //   gallop — big bounding strides, FAST (1.9–2.3)
+      var gaitRoll = Math.random();
+      var gait = gaitRoll < 0.34 ? "sneak" : gaitRoll < 0.72 ? "trot" : "gallop";
+      var gaitSpeed = gait === "sneak" ? 0.7 + Math.random() * 0.4
+        : gait === "gallop" ? 1.9 + Math.random() * 0.4
+        : 1.3 + Math.random() * 0.4;
       obstacles.push({
         type: "fox", kind: tall ? "neela" : "kuttai",
         x: W + 90, w: tall ? 88 : 66, h: tall ? 62 : 46,
-        phase: Math.random() * 6.28, ownSpeed: 1.4 + Math.random() * 0.5
+        phase: Math.random() * 6.28, ownSpeed: gaitSpeed, gait: gait
       });
+      lastFoxGait = gait;
     }
     // Wider gaps: after landing from one jump there is always room to
     // run a few steps and jump again before the next obstacle arrives.
-    spawnIn = (430 + Math.random() * 290) * (5.4 / speed) + 150;
+    // A galloping fox earns the NEXT obstacle extra space, so a fast
+    // fox is always followed by a fair jumping gap.
+    spawnIn = (430 + Math.random() * 290) * (5.4 / speed) + 150
+      + (lastFoxGait === "gallop" ? 120 : 0);
   }
 
   /* ================= Actions ================= */
@@ -270,8 +293,11 @@
     rescued++;
     score += 100;
     sfxRescue(); // includes the meow, every time
+    var esc = ob.kitten.escape || "hop";
     freedKittens.push({
-      kitten: ob.kitten, x: ob.x + 20, y: GROUND, vy: -9.5, vx: 4.6, phase: 0
+      kitten: ob.kitten, x: ob.x + 20, y: GROUND,
+      vy: esc === "dash" ? -2.5 : esc === "leap" ? -11 : esc === "tiny" ? -6.5 : -9.5,
+      vx: ob.kitten.vx || 4.6, escape: esc, phase: 0, spin: 0
     });
     floaters.push({ text: "🎉 " + ob.kitten.name + " saved! +100", x: ob.x, y: GROUND - 130, life: 70 });
     // Less often (about 1 rescue in 6) the kitten praises Inba with
@@ -339,7 +365,9 @@
       ob.x -= speed * dt;
       if (ob.type === "fox") {
         ob.x -= ob.ownSpeed * dt;
-        ob.phase += dt * 0.35;
+        // Step rate per gait: sneak = quick little steps, gallop =
+        // slower, bigger strides, trot in between.
+        ob.phase += dt * (ob.gait === "sneak" ? 0.55 : ob.gait === "gallop" ? 0.26 : 0.35);
         // Collision (generously shrunk AABB — a near miss is a miss,
         // grazing a fox's tail or ears does not even count as a catch)
         if (!ob.counted && inba.invincible <= 0) {
@@ -354,14 +382,26 @@
       if (ob.x < -130) obstacles.splice(i, 1);
     }
 
-    // Freed kittens hop out and run happily to the right
+    // Freed kittens escape to the right — each in her OWN style:
+    // hop (bouncy), zigzag (weaving scamper), tiny (quick mini-hops),
+    // dash (low and flat-out), leap (big floaty arcs), twirl (spinning
+    // hops). Speeds differ per kitten (see KITTENS vx values).
     for (var j = freedKittens.length - 1; j >= 0; j--) {
       var fk = freedKittens[j];
-      fk.vy += 0.55 * dt;
+      fk.vy += (fk.escape === "leap" ? 0.38 : 0.55) * dt;
       fk.y += fk.vy * dt;
-      fk.x += (fk.vx - speed * 0.35) * dt;
-      fk.phase += dt * 0.4;
-      if (fk.y >= GROUND) { fk.y = GROUND; fk.vy = fk.vy < -2 ? fk.vy * -0.45 : -4.2; }
+      var vxNow = fk.vx;
+      if (fk.escape === "zigzag") vxNow = fk.vx + Math.sin(fk.phase * 2.4) * 1.7;
+      fk.x += (vxNow - speed * 0.35) * dt;
+      fk.phase += dt * (fk.escape === "tiny" ? 0.7 : 0.4);
+      if (fk.escape === "twirl") fk.spin += dt * 0.22;
+      if (fk.y >= GROUND) {
+        fk.y = GROUND;
+        if (fk.escape === "dash") fk.vy = 0; // stays low, just runs
+        else if (fk.escape === "leap") fk.vy = fk.vy < -2 ? fk.vy * -0.4 : -10.5;
+        else if (fk.escape === "tiny") fk.vy = fk.vy < -1.5 ? fk.vy * -0.4 : -3.0;
+        else fk.vy = fk.vy < -2 ? fk.vy * -0.45 : -4.2;
+      }
       if (fk.x > W + 60 || fk.x < -80) freedKittens.splice(j, 1);
     }
 
@@ -456,17 +496,21 @@
 
   // Fur shading per kitten: main, shadow, stripe and belly tones.
   var KITTEN_FUR = {
-    "Vellai": { shadow: "#d9dee6", stripe: null, belly: "#ffffff" },
-    "Mittai": { shadow: "#d9820f", stripe: "#b96a08", belly: "#ffe7bd" },
-    "Chinna": { shadow: "#a7b3bc", stripe: "#87969f", belly: "#eef3f6" }
+    "Vellai": { shadow: "#d9dee6", stripe: null, belly: "#ffffff", spots: null },
+    "Mittai": { shadow: "#d9820f", stripe: "#b96a08", belly: "#ffe7bd", spots: null },
+    "Chinna": { shadow: "#a7b3bc", stripe: "#87969f", belly: "#eef3f6", spots: null },
+    "Karuppu": { shadow: "#26262e", stripe: null, belly: "#55555f", spots: null },
+    "Pulli": { shadow: "#dfc391", stripe: null, belly: "#fff6e0", spots: "#c98f4e" },
+    "Neelam": { shadow: "#6d87ad", stripe: null, belly: "#dfe9f5", spots: null }
   };
 
-  function drawKitten(x, baseY, k, phase, happy) {
+  function drawKitten(x, baseY, k, phase, happy, rot) {
     var s = k.scale;
-    var fur = KITTEN_FUR[k.name] || { shadow: k.color, stripe: null, belly: "#ffffff" };
+    var fur = KITTEN_FUR[k.name] || { shadow: k.color, stripe: null, belly: "#ffffff", spots: null };
     ctx.save();
     ctx.translate(x, baseY);
     ctx.scale(s, s);
+    if (rot) ctx.rotate(rot);
     var bob = happy ? Math.abs(Math.sin(phase)) * 5 : 0;
     ctx.translate(0, -bob);
     // soft ground shadow
@@ -508,6 +552,14 @@
         ctx.quadraticCurveTo(5 + st * 6, -17, 3 + st * 6, -13);
         ctx.stroke();
       }
+    }
+    // spots on the back and flank (Pulli)
+    if (fur.spots) {
+      ctx.fillStyle = fur.spots;
+      ctx.beginPath(); ctx.ellipse(6, -19, 3.4, 2.4, 0.4, 0, 6.29); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(12, -13, 2.6, 1.9, -0.3, 0, 6.29); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-1, -15.5, 2.2, 1.6, 0.2, 0, 6.29); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(9, -7.5, 2.4, 1.7, 0.5, 0, 6.29); ctx.fill();
     }
     // head with shaded cheek side
     var headGrad = ctx.createRadialGradient(-14, -31, 2, -10, -26, 13);
@@ -617,11 +669,16 @@
   function drawFox(ob) {
     var s = ob.kind === "neela" ? 1.14 : 0.82;
     var x = ob.x + ob.w / 2, baseY = GROUND;
+    // Walking style per gait: sneak crouches low with small quick leg
+    // swings; gallop bounds with big same-direction leg swings and a
+    // body bounce; trot is the classic alternating run.
+    var stride = ob.gait === "gallop" ? 12 : ob.gait === "sneak" ? 4.5 : 8;
+    var bobY = ob.gait === "sneak" ? 4 : ob.gait === "gallop" ? -Math.abs(Math.sin(ob.phase)) * 4.5 : 0;
     ctx.save();
-    ctx.translate(x, baseY);
+    ctx.translate(x, baseY + bobY);
     ctx.scale(s, s);
-    var run = Math.sin(ob.phase) * 8;
-    var run2 = Math.sin(ob.phase + Math.PI) * 8;
+    var run = Math.sin(ob.phase) * stride;
+    var run2 = ob.gait === "gallop" ? Math.sin(ob.phase) * stride * 0.85 : Math.sin(ob.phase + Math.PI) * stride;
     var tailWag = Math.sin(ob.phase * 0.7) * 3;
     // ground shadow
     ctx.fillStyle = "rgba(60,90,40,0.25)";
@@ -954,7 +1011,8 @@
     }
     for (i = 0; i < freedKittens.length; i++) {
       var fk = freedKittens[i];
-      drawKitten(fk.x, fk.y, fk.kitten, fk.phase, true);
+      var rot = fk.escape === "twirl" ? Math.sin(fk.spin || 0) * 0.45 : 0;
+      drawKitten(fk.x, fk.y, fk.kitten, fk.phase, true, rot);
     }
     drawInba();
     // particles

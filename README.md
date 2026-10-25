@@ -27,6 +27,11 @@ original stories and read them one by one.
   rescue), and less often one praises her in his own recorded voice —
   one of his 7 praise clips (`media/praise-1.mp3` …
   `media/praise-7.mp3`), also picked at random.
+  Six kitten styles — Vellai, Mittai, Chinna plus Karuppu, Pulli and
+  Neelam — each escaping in her own way (hop, zigzag, tiny hops, dash,
+  big leaps, twirl) at her own speed. The foxes walk three ways too —
+  sneak (slow), trot, gallop (fast) — with extra jumping space after
+  a galloping fox.
   Linked from the home page and from Inba's story page.
 - **Animations everywhere** — drifting clouds, twinkling stars, bobbing
   balloons, bouncing titles, wiggling "Read me" arrows, and a shiny sweep
