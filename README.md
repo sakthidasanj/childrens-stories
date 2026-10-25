@@ -15,11 +15,14 @@ original stories and read them one by one.
 - **A game!** — *Inba: Kitten Rescue* (`game.html`): a Mario-style runner
   where Inba jumps over the funny foxes and frees her kittens from cages,
   with "Inba Super Girl Paattu" playing very softly and distinct sound
-  effects for jumping, kitten rescues, fox catches and lost hearts.
-  Snappy jumps, a cape double-jump, and 10 hearts. Inba's cape hangs
+  effects for jumping, kitten rescues and fox catches.
+  Snappy jumps and a cape double-jump. There are no lives or hearts —
+  the run is endless, and a fox catch just tells Inba to be careful.
+  Inba's cape hangs
   still while she runs and streams out fluidly when she jumps; every
-  freed kitten meows, and occasionally one calls out "Inba akka! Meow!"
-  in a little voice. Linked from the home page and from Inba's story page.
+  freed kitten meows, and occasionally one cheers "Inba akka vaazhga!"
+  using the captured voice clip `media/inba-akka-vaazhga.mp3`.
+  Linked from the home page and from Inba's story page.
 - **Animations everywhere** — drifting clouds, twinkling stars, bobbing
   balloons, bouncing titles, wiggling "Read me" arrows, and a shiny sweep
   across every story picture. Respects `prefers-reduced-motion`.

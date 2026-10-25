@@ -66,7 +66,6 @@
     font-size: 1.05rem;
     box-shadow: 0 3px 8px #14467f22;
   }
-  .hud-chip.hearts { border-color: #ff8fab; letter-spacing: 2px; }
   .hud-spacer { flex: 1; }
   .icon-btn {
     font-family: "Fredoka", sans-serif;
@@ -159,7 +158,6 @@
 </div>
 
 <div class="hud" aria-label="Game status">
-  <span class="hud-chip hearts" id="heartsChip" title="Hearts">❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️</span>
   <span class="hud-chip" id="kittensChip" title="Kittens rescued">🐱 Rescued: 0</span>
   <span class="hud-chip" id="scoreChip" title="Score">⭐ Score: 0</span>
   <span class="hud-spacer"></span>
@@ -176,21 +174,15 @@
     <p>Jump over the funny foxes — Kuttai Nari and Neela Nari.<br />
     Run past a cage and the kitten inside pops free! 🎉<br />
     Press <b>Space</b> or <b>tap</b> to jump — press it again in the air for a cape double-jump!<br />
-    You have 10 ❤️ — a fox catch costs one.</p>
+    No lives to lose — if a fox catches you, just be careful and keep running!</p>
     <button class="play-btn" id="playBtn" type="button">▶ Play</button>
-  </div>
-
-  <div class="overlay" id="overOverlay" hidden>
-    <div class="big" aria-hidden="true">🌟</div>
-    <h2 id="overTitle">Great running, Inba!</h2>
-    <p id="overStats">Score: 0 · Kittens rescued: 0</p>
-    <button class="play-btn" id="againBtn" type="button">↻ Play again</button>
   </div>
 </div>
 
 <p class="hint"><kbd>Space</kbd> / <kbd>↑</kbd> / tap = jump, again in the air = double-jump &nbsp;·&nbsp; 🎵 “Inba Super Girl Paattu” plays very softly while you run</p>
 
 <audio id="bgSong" src="media/inba-super-girl-song.mp3" loop preload="auto"></audio>
+<audio id="akkaVoice" src="media/inba-akka-vaazhga.mp3" preload="auto"></audio>
 <script src="game.js"></script>
 </body>
 </html>

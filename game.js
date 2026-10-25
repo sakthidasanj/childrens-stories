@@ -8,16 +8,14 @@
   var H = canvas.height;  // 540
   var GROUND = H - 78;    // y of the ground surface
 
-  var heartsChip = document.getElementById("heartsChip");
   var kittensChip = document.getElementById("kittensChip");
   var scoreChip = document.getElementById("scoreChip");
   var startOverlay = document.getElementById("startOverlay");
-  var overOverlay = document.getElementById("overOverlay");
-  var overTitle = document.getElementById("overTitle");
-  var overStats = document.getElementById("overStats");
   var soundBtn = document.getElementById("soundBtn");
   var bgSong = document.getElementById("bgSong");
   bgSong.volume = 0.08; // song sits quietly under the action and the effects
+  var akkaVoice = document.getElementById("akkaVoice");
+  if (akkaVoice) akkaVoice.volume = 0.9;
 
   /* ================= Sound effects (WebAudio) ================= */
   var audioCtx = null;
@@ -64,18 +62,16 @@
     tone(980, 720, 0.11, "triangle", 0.07, when + 0.3);
   }
   function sfxKittenVoice() {
-    // Occasionally a freed kitten actually calls out "Inba akka! Meow!"
-    // in a high kitten voice, using the browser's speech voice.
-    if (!soundOn) return;
+    // Occasionally a freed kitten cheers with the captured voice clip
+    // saying "Inba akka vaazhga!" (media/inba-akka-vaazhga.mp3) — a
+    // real audio file, not a live automated voice in the browser.
+    // If the clip can't load, this stays silent — the meow still plays.
+    if (!soundOn || !akkaVoice) return;
     try {
-      if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) return;
-      if (window.speechSynthesis.speaking) return; // never talk over itself
-      var u = new window.SpeechSynthesisUtterance("Inba akka! Meow!");
-      u.pitch = 1.8;  // kitten-high
-      u.rate = 1.05;
-      u.volume = 0.7;
-      window.speechSynthesis.speak(u);
-    } catch (e) { /* speech is a bonus — the meow above always plays */ }
+      akkaVoice.currentTime = 0;
+      var p = akkaVoice.play();
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) { /* recording not loaded yet */ }
   }
   function sfxRescue() {
     // Cage pop + happy meow + sparkle arpeggio.
@@ -92,19 +88,13 @@
     tone(1250, 950, 0.07, "square", 0.11, 0.09);
     tone(160, 60, 0.22, "sawtooth", 0.16, 0.14);
   }
-  function sfxLifeLost() {
-    // A heart slips away: clear descending two-note cue.
-    tone(620, 590, 0.13, "triangle", 0.17, 0.02);
-    tone(415, 310, 0.26, "triangle", 0.17, 0.15);
-    tone(208, 180, 0.2, "sine", 0.1, 0.16);
+  function sfxCareful() {
+    // Gentle "be careful!" reminder — two soft attention notes, nothing
+    // scary and no penalty. (There are no lives/hearts to lose.)
+    tone(740, 740, 0.1, "triangle", 0.12, 0.16);
+    tone(880, 880, 0.14, "triangle", 0.12, 0.28);
   }
-  function sfxHit() { sfxCatch(); sfxLifeLost(); }
-  function sfxOver() {
-    tone(659, 659, 0.16, "triangle", 0.15);
-    tone(523, 523, 0.16, "triangle", 0.15, 0.15);
-    tone(392, 392, 0.16, "triangle", 0.15, 0.3);
-    tone(330, 330, 0.3, "triangle", 0.15, 0.45);
-  }
+  function sfxHit() { sfxCatch(); sfxCareful(); }
 
   /* ================= Game state ================= */
   var KITTENS = [
@@ -113,7 +103,6 @@
     { name: "Chinna", color: "#cfd8dc", ear: "#ffcdd2", scale: 0.78 }
   ];
 
-  var MAX_HEARTS = 10;
   // Snappier jump: strong gravity + slightly lower launch = high enough to
   // clear a tall fox (~89px), but airborne ~28 frames instead of ~46, so
   // Inba lands well past one fox and can jump again almost right away.
@@ -121,11 +110,10 @@
   var JUMP_V = -13.2;
   var DOUBLE_JUMP_V = -11.2;
 
-  var state = "ready"; // ready | playing | over
+  var state = "ready"; // ready | playing — no lives, so no game over:
+  // the run is endless until the player restarts it themselves.
   var inba, obstacles, freedKittens, floaters, particles;
-  var hearts, rescued, score, speed, frame, spawnIn, kittenCycle, shake;
-  var best = 0;
-  try { best = parseInt(localStorage.getItem("inbaGameBest") || "0", 10) || 0; } catch (e) { best = 0; }
+  var rescued, score, speed, frame, spawnIn, kittenCycle, shake;
 
   function reset() {
     inba = { x: 130, y: GROUND, vy: 0, grounded: true, runPhase: 0, invincible: 0, jumps: 0, jumpBuffer: 0, capeLift: 0, capeFlare: 0 };
@@ -133,7 +121,6 @@
     freedKittens = [];
     floaters = [];
     particles = [];
-    hearts = MAX_HEARTS;
     rescued = 0;
     score = 0;
     speed = 5;
@@ -145,9 +132,6 @@
   }
 
   function updateHUD() {
-    var h = "";
-    for (var i = 0; i < MAX_HEARTS; i++) h += i < hearts ? "❤️" : "🤍";
-    heartsChip.textContent = h;
     kittensChip.textContent = "🐱 Rescued: " + rescued;
     scoreChip.textContent = "⭐ Score: " + Math.floor(score);
   }
@@ -207,34 +191,19 @@
     reset();
     state = "playing";
     startOverlay.hidden = true;
-    overOverlay.hidden = true;
     if (soundOn) { bgSong.currentTime = 0; bgSong.play().catch(function () {}); }
   }
 
-  function gameOver() {
-    state = "over";
-    sfxOver();
-    var final = Math.floor(score);
-    if (final > best) {
-      best = final;
-      try { localStorage.setItem("inbaGameBest", String(best)); } catch (e) {}
-    }
-    overTitle.textContent = rescued >= 6 ? "🌟 Super Girl Inba wins!" : "Great running, Inba!";
-    overStats.textContent =
-      "⭐ Score: " + final + " · 🐱 Kittens rescued: " + rescued + " · 🏆 Best: " + best;
-    overOverlay.hidden = false;
-  }
-
   function hitFox(ob) {
-    ob.counted = true; // one hit per fox
-    hearts--;
-    inba.invincible = 95;
-    shake = 9;
-    sfxHit(); // fox-catch yips + the life-lost cue
-    floaters.push({ text: "🦊 Caught you! -1 ❤️", x: inba.x + 30, y: inba.y - 120, life: 70 });
-    updateHUD();
-    burst(inba.x + 30, inba.y - 50, "#ff8fab", 10);
-    if (hearts <= 0) gameOver();
+    // A fox catch costs nothing — no lives, no hearts, no game over.
+    // It just warns her to be careful, gives her a brief moment where
+    // the same fox can't catch her again, and she keeps running.
+    ob.counted = true; // one catch per fox
+    inba.invincible = 80;
+    shake = 6;
+    sfxHit(); // fox-catch yips + the gentle "be careful" cue
+    floaters.push({ text: "🦊 Oops — be careful, Inba!", x: inba.x + 30, y: inba.y - 120, life: 75 });
+    burst(inba.x + 30, inba.y - 50, "#ff8fab", 8);
   }
 
   function freeKitten(ob) {
@@ -246,11 +215,11 @@
       kitten: ob.kitten, x: ob.x + 20, y: GROUND, vy: -9.5, vx: 4.6, phase: 0
     });
     floaters.push({ text: "🎉 " + ob.kitten.name + " saved! +100", x: ob.x, y: GROUND - 130, life: 70 });
-    // Occasionally (about 1 rescue in 4) the kitten calls out
-    // "Inba akka! Meow!" out loud.
+    // Occasionally (about 1 rescue in 4) the kitten cheers with the
+    // recorded voice: "Inba akka vaazhga!"
     if (rescued % 5 === 3 || Math.random() < 0.08) {
       sfxKittenVoice();
-      floaters.push({ text: "🐱 “Inba akka! Meow!”", x: ob.x + 10, y: GROUND - 168, life: 80 });
+      floaters.push({ text: "🐱 “Inba akka vaazhga!”", x: ob.x + 10, y: GROUND - 168, life: 80 });
     }
     burst(ob.x + 37, GROUND - 60, "#ffd166", 14);
     updateHUD();
@@ -313,7 +282,7 @@
         ob.x -= ob.ownSpeed * dt;
         ob.phase += dt * 0.35;
         // Collision (generously shrunk AABB — a near miss is a miss,
-        // grazing a fox's tail or ears must not cost a heart)
+        // grazing a fox's tail or ears does not even count as a catch)
         if (!ob.counted && inba.invincible <= 0) {
           var ix = inba.x + 16, iy = inba.y - 80, iw = 26, ih = 80;
           var fx = ob.x + 15, fy = GROUND - ob.h + 15, fw = ob.w - 30, fh = ob.h - 17;
@@ -974,14 +943,13 @@
     if (state === "playing") { e.preventDefault(); jump(); }
   });
   document.getElementById("playBtn").addEventListener("click", startGame);
-  document.getElementById("againBtn").addEventListener("click", startGame);
   document.getElementById("restartBtn").addEventListener("click", startGame);
   soundBtn.addEventListener("click", function () {
     soundOn = !soundOn;
     soundBtn.textContent = soundOn ? "🔊 Sound: On" : "🔇 Sound: Off";
     if (!soundOn) {
       bgSong.pause();
-      try { if ("speechSynthesis" in window) window.speechSynthesis.cancel(); } catch (e) {}
+      try { if (akkaVoice) akkaVoice.pause(); } catch (e) {}
     }
     else if (state === "playing") { ensureAudio(); bgSong.play().catch(function () {}); }
   });
