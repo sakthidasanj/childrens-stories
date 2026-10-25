@@ -17,7 +17,7 @@
   var overStats = document.getElementById("overStats");
   var soundBtn = document.getElementById("soundBtn");
   var bgSong = document.getElementById("bgSong");
-  bgSong.volume = 0.22;
+  bgSong.volume = 0.08; // song sits quietly under the action and the effects
 
   /* ================= Sound effects (WebAudio) ================= */
   var audioCtx = null;
@@ -46,14 +46,43 @@
     osc.start(t0);
     osc.stop(t0 + dur + 0.02);
   }
-  function sfxJump() { tone(280, 720, 0.16, "triangle", 0.16); }
-  function sfxRescue() {
-    tone(523, 523, 0.11, "sine", 0.16);
-    tone(659, 659, 0.11, "sine", 0.16, 0.09);
-    tone(784, 784, 0.12, "sine", 0.16, 0.18);
-    tone(1047, 1047, 0.2, "sine", 0.17, 0.27);
+  function sfxJump(doubleJump) {
+    // Whoosh up — higher and brighter for the cape double-jump.
+    if (doubleJump) {
+      tone(520, 1180, 0.15, "triangle", 0.17);
+      tone(780, 1420, 0.12, "sine", 0.1, 0.03);
+    } else {
+      tone(300, 820, 0.15, "triangle", 0.16);
+      tone(450, 900, 0.1, "sine", 0.08, 0.02);
+    }
   }
-  function sfxHit() { tone(190, 55, 0.28, "sawtooth", 0.14); }
+  function sfxMeow(when) {
+    // Little synthesized "mew": slides down, then a shorter happy chirp.
+    tone(920, 540, 0.16, "sawtooth", 0.045, when);
+    tone(980, 700, 0.11, "sawtooth", 0.04, when + 0.15);
+  }
+  function sfxRescue() {
+    // Cage pop + happy meow + sparkle arpeggio.
+    tone(220, 440, 0.08, "square", 0.1);
+    sfxMeow(0.05);
+    tone(523, 523, 0.11, "sine", 0.15, 0.05);
+    tone(659, 659, 0.11, "sine", 0.15, 0.14);
+    tone(784, 784, 0.12, "sine", 0.15, 0.23);
+    tone(1047, 1047, 0.22, "sine", 0.16, 0.32);
+  }
+  function sfxCatch() {
+    // The fox catches her: two sharp yips and a grab thud.
+    tone(1150, 900, 0.07, "square", 0.11);
+    tone(1250, 950, 0.07, "square", 0.11, 0.09);
+    tone(160, 60, 0.22, "sawtooth", 0.16, 0.14);
+  }
+  function sfxLifeLost() {
+    // A heart slips away: clear descending two-note cue.
+    tone(620, 590, 0.13, "triangle", 0.17, 0.02);
+    tone(415, 310, 0.26, "triangle", 0.17, 0.15);
+    tone(208, 180, 0.2, "sine", 0.1, 0.16);
+  }
+  function sfxHit() { sfxCatch(); sfxLifeLost(); }
   function sfxOver() {
     tone(659, 659, 0.16, "triangle", 0.15);
     tone(523, 523, 0.16, "triangle", 0.15, 0.15);
@@ -68,6 +97,14 @@
     { name: "Chinna", color: "#cfd8dc", ear: "#ffcdd2", scale: 0.78 }
   ];
 
+  var MAX_HEARTS = 10;
+  // Snappier jump: strong gravity + slightly lower launch = high enough to
+  // clear a tall fox (~89px), but airborne ~28 frames instead of ~46, so
+  // Inba lands well past one fox and can jump again almost right away.
+  var GRAVITY = 0.95;
+  var JUMP_V = -13.2;
+  var DOUBLE_JUMP_V = -11.2;
+
   var state = "ready"; // ready | playing | over
   var inba, obstacles, freedKittens, floaters, particles;
   var hearts, rescued, score, speed, frame, spawnIn, kittenCycle, shake;
@@ -75,17 +112,17 @@
   try { best = parseInt(localStorage.getItem("inbaGameBest") || "0", 10) || 0; } catch (e) { best = 0; }
 
   function reset() {
-    inba = { x: 130, y: GROUND, vy: 0, grounded: true, runPhase: 0, invincible: 0 };
+    inba = { x: 130, y: GROUND, vy: 0, grounded: true, runPhase: 0, invincible: 0, jumps: 0, jumpBuffer: 0 };
     obstacles = [];
     freedKittens = [];
     floaters = [];
     particles = [];
-    hearts = 3;
+    hearts = MAX_HEARTS;
     rescued = 0;
     score = 0;
     speed = 5;
     frame = 0;
-    spawnIn = 320;
+    spawnIn = 380;
     kittenCycle = 0;
     shake = 0;
     updateHUD();
@@ -93,7 +130,7 @@
 
   function updateHUD() {
     var h = "";
-    for (var i = 0; i < 3; i++) h += i < hearts ? "❤️" : "🤍";
+    for (var i = 0; i < MAX_HEARTS; i++) h += i < hearts ? "❤️" : "🤍";
     heartsChip.textContent = h;
     kittensChip.textContent = "🐱 Rescued: " + rescued;
     scoreChip.textContent = "⭐ Score: " + Math.floor(score);
@@ -118,17 +155,32 @@
         phase: Math.random() * 6.28, ownSpeed: 1.4 + Math.random() * 0.5
       });
     }
-    // Gap shrinks slightly as speed grows, but always leaves jump room.
-    spawnIn = (330 + Math.random() * 260) * (5.4 / speed) + 120;
+    // Wider gaps: after landing from one jump there is always room to
+    // run a few steps and jump again before the next obstacle arrives.
+    spawnIn = (430 + Math.random() * 290) * (5.4 / speed) + 150;
   }
 
   /* ================= Actions ================= */
   function jump() {
     if (state !== "playing") return;
     if (inba.grounded) {
-      inba.vy = -14.2;
+      inba.vy = JUMP_V;
       inba.grounded = false;
-      sfxJump();
+      inba.jumps = 1;
+      inba.jumpBuffer = 0;
+      sfxJump(false);
+    } else if (inba.jumps < 2) {
+      // Super Girl cape double-jump: if a jump looks like it would land
+      // on a fox, she can jump again in mid-air and escape over it.
+      inba.vy = DOUBLE_JUMP_V;
+      inba.jumps = 2;
+      inba.jumpBuffer = 0;
+      sfxJump(true);
+      burst(inba.x + 22, inba.y - 6, "#ff6b6b", 7);
+    } else {
+      // Pressed a touch too early — remember it, and jump the moment
+      // she lands instead of dropping the input.
+      inba.jumpBuffer = 9;
     }
   }
 
@@ -160,7 +212,8 @@
     hearts--;
     inba.invincible = 95;
     shake = 9;
-    sfxHit();
+    sfxHit(); // fox-catch yips + the life-lost cue
+    floaters.push({ text: "🦊 Caught you! -1 ❤️", x: inba.x + 30, y: inba.y - 120, life: 70 });
     updateHUD();
     burst(inba.x + 30, inba.y - 50, "#ff8fab", 10);
     if (hearts <= 0) gameOver();
@@ -194,12 +247,22 @@
   /* ================= Update ================= */
   function update(dt) {
     frame += dt;
-    speed = Math.min(9.6, 5 + frame * 0.0016);
+    speed = Math.min(8.6, 5 + frame * 0.0013);
 
     // Inba physics
-    inba.vy += 0.62 * dt;
+    inba.vy += GRAVITY * dt;
     inba.y += inba.vy * dt;
-    if (inba.y >= GROUND) { inba.y = GROUND; inba.vy = 0; inba.grounded = true; }
+    if (inba.jumpBuffer > 0) inba.jumpBuffer -= dt;
+    if (inba.y >= GROUND) {
+      inba.y = GROUND; inba.vy = 0; inba.grounded = true; inba.jumps = 0;
+      if (inba.jumpBuffer > 0) {
+        inba.jumpBuffer = 0;
+        inba.vy = JUMP_V;
+        inba.grounded = false;
+        inba.jumps = 1;
+        sfxJump(false);
+      }
+    }
     inba.runPhase += dt * (inba.grounded ? 0.32 : 0.08);
     if (inba.invincible > 0) inba.invincible -= dt;
     if (shake > 0) shake = Math.max(0, shake - dt * 0.7);
@@ -218,10 +281,11 @@
       if (ob.type === "fox") {
         ob.x -= ob.ownSpeed * dt;
         ob.phase += dt * 0.35;
-        // Collision (shrunk AABB for fairness)
+        // Collision (generously shrunk AABB — a near miss is a miss,
+        // grazing a fox's tail or ears must not cost a heart)
         if (!ob.counted && inba.invincible <= 0) {
-          var ix = inba.x + 12, iy = inba.y - 84, iw = 34, ih = 84;
-          var fx = ob.x + 8, fy = GROUND - ob.h + 8, fw = ob.w - 14, fh = ob.h - 10;
+          var ix = inba.x + 16, iy = inba.y - 80, iw = 26, ih = 80;
+          var fx = ob.x + 15, fy = GROUND - ob.h + 15, fw = ob.w - 30, fh = ob.h - 17;
           if (ix < fx + fw && ix + iw > fx && iy < fy + fh && iy + ih > fy) hitFox(ob);
         }
       } else if (ob.type === "cage") {
@@ -331,48 +395,121 @@
     }
   }
 
+  // Fur shading per kitten: main, shadow, stripe and belly tones.
+  var KITTEN_FUR = {
+    "Vellai": { shadow: "#d9dee6", stripe: null, belly: "#ffffff" },
+    "Mittai": { shadow: "#d9820f", stripe: "#b96a08", belly: "#ffe7bd" },
+    "Chinna": { shadow: "#a7b3bc", stripe: "#87969f", belly: "#eef3f6" }
+  };
+
   function drawKitten(x, baseY, k, phase, happy) {
     var s = k.scale;
+    var fur = KITTEN_FUR[k.name] || { shadow: k.color, stripe: null, belly: "#ffffff" };
     ctx.save();
     ctx.translate(x, baseY);
     ctx.scale(s, s);
     var bob = happy ? Math.abs(Math.sin(phase)) * 5 : 0;
     ctx.translate(0, -bob);
-    // tail
-    ctx.strokeStyle = k.color === "#ffffff" ? "#e8e8e8" : k.color;
-    ctx.lineWidth = 5;
+    // soft ground shadow
+    ctx.fillStyle = "rgba(60,90,40,0.22)";
+    ctx.beginPath(); ctx.ellipse(0, 1 + bob, 17, 3.5, 0, 0, 6.29); ctx.fill();
+    // tail — curved, tapered, with stripes; tip curls up happily
+    ctx.lineCap = "round";
+    ctx.strokeStyle = fur.shadow;
+    ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.moveTo(14, -12);
-    ctx.quadraticCurveTo(26, -20, 22, -32);
+    ctx.moveTo(13, -10);
+    ctx.quadraticCurveTo(27, -14, 25, -30 - (happy ? 3 : 0));
     ctx.stroke();
-    // body
-    ctx.fillStyle = k.color;
-    ctx.beginPath(); ctx.ellipse(0, -12, 16, 11, 0, 0, 6.29); ctx.fill();
-    // head
-    ctx.beginPath(); ctx.arc(-10, -26, 11, 0, 6.29); ctx.fill();
-    // ears
+    ctx.strokeStyle = k.color;
+    ctx.lineWidth = 4.4;
     ctx.beginPath();
-    ctx.moveTo(-19, -33); ctx.lineTo(-16, -43); ctx.lineTo(-10, -36); ctx.closePath();
-    ctx.moveTo(-9, -36); ctx.lineTo(-3, -43); ctx.lineTo(-1, -33); ctx.closePath();
+    ctx.moveTo(13, -10);
+    ctx.quadraticCurveTo(27, -14, 25, -30 - (happy ? 3 : 0));
+    ctx.stroke();
+    // paws
+    ctx.fillStyle = fur.shadow;
+    ctx.beginPath(); ctx.ellipse(-8, -2, 5.5, 3, 0, 0, 6.29); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(7, -2, 5.5, 3, 0, 0, 6.29); ctx.fill();
+    // body with shaded underside and a cream chest
+    var bodyGrad = ctx.createLinearGradient(0, -26, 0, 0);
+    bodyGrad.addColorStop(0, k.color);
+    bodyGrad.addColorStop(1, fur.shadow);
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath(); ctx.ellipse(0, -12, 17, 11.5, 0, 0, 6.29); ctx.fill();
+    ctx.fillStyle = fur.belly;
+    ctx.beginPath(); ctx.ellipse(-6, -8.5, 9, 6, -0.25, 0, 6.29); ctx.fill();
+    // tabby stripes on the back (Mittai & Chinna)
+    if (fur.stripe) {
+      ctx.strokeStyle = fur.stripe;
+      ctx.lineWidth = 1.7;
+      for (var st = -1; st <= 1; st++) {
+        ctx.beginPath();
+        ctx.moveTo(3 + st * 6, -22.5);
+        ctx.quadraticCurveTo(5 + st * 6, -17, 3 + st * 6, -13);
+        ctx.stroke();
+      }
+    }
+    // head with shaded cheek side
+    var headGrad = ctx.createRadialGradient(-14, -31, 2, -10, -26, 13);
+    headGrad.addColorStop(0, k.color);
+    headGrad.addColorStop(1, fur.shadow);
+    ctx.fillStyle = headGrad;
+    ctx.beginPath(); ctx.arc(-10, -26, 11.5, 0, 6.29); ctx.fill();
+    // ears with pink inners and little tufts
+    ctx.fillStyle = fur.shadow;
+    ctx.beginPath();
+    ctx.moveTo(-19.5, -32); ctx.lineTo(-17, -44); ctx.lineTo(-9.5, -36); ctx.closePath();
+    ctx.moveTo(-10, -36.5); ctx.lineTo(-3.5, -44); ctx.lineTo(-0.5, -32.5); ctx.closePath();
     ctx.fill();
     ctx.fillStyle = k.ear;
     ctx.beginPath();
-    ctx.moveTo(-16.5, -34.5); ctx.lineTo(-15, -39.5); ctx.lineTo(-12, -35.5); ctx.closePath();
-    ctx.moveTo(-7.5, -35.5); ctx.lineTo(-4.5, -39.5); ctx.lineTo(-3.5, -34.5); ctx.closePath();
+    ctx.moveTo(-17, -34); ctx.lineTo(-15.8, -40.5); ctx.lineTo(-12, -35.5); ctx.closePath();
+    ctx.moveTo(-7.8, -35.8); ctx.lineTo(-4.8, -40.5); ctx.lineTo(-3.2, -34); ctx.closePath();
     ctx.fill();
-    // face
-    ctx.fillStyle = "#333";
-    if (happy) {
-      ctx.lineWidth = 1.8; ctx.strokeStyle = "#333";
-      ctx.beginPath(); ctx.arc(-14, -27, 2.6, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke();
-      ctx.beginPath(); ctx.arc(-6, -27, 2.6, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke();
-      ctx.beginPath(); ctx.arc(-10, -21.5, 3, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
-    } else {
-      ctx.beginPath(); ctx.arc(-14, -27, 1.7, 0, 6.29); ctx.fill();
-      ctx.beginPath(); ctx.arc(-6, -27, 1.7, 0, 6.29); ctx.fill();
-      ctx.fillStyle = "#ff8fab";
-      ctx.beginPath(); ctx.arc(-10, -23.5, 1.8, 0, 6.29); ctx.fill();
+    // tabby "M" on the forehead
+    if (fur.stripe) {
+      ctx.strokeStyle = fur.stripe; ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(-14, -34); ctx.lineTo(-13, -30.5);
+      ctx.moveTo(-10, -34.5); ctx.lineTo(-10, -31);
+      ctx.moveTo(-6, -34); ctx.lineTo(-7, -30.5);
+      ctx.stroke();
     }
+    // muzzle, pink nose and mouth
+    ctx.fillStyle = fur.belly;
+    ctx.beginPath(); ctx.ellipse(-10, -21.5, 5.5, 3.8, 0, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#f2789f";
+    ctx.beginPath();
+    ctx.moveTo(-11.6, -23.6); ctx.lineTo(-8.4, -23.6); ctx.lineTo(-10, -21.9); ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#8a5a63"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(-11.8, -20.6, 1.9, 0.1 * Math.PI, 0.8 * Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(-8.2, -20.6, 1.9, 0.1 * Math.PI, 0.8 * Math.PI); ctx.stroke();
+    // eyes — green/amber with pupils and a light sparkle; happy = closed arcs
+    if (happy) {
+      ctx.lineWidth = 1.8; ctx.strokeStyle = "#33302e";
+      ctx.beginPath(); ctx.arc(-14.5, -27, 2.7, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke();
+      ctx.beginPath(); ctx.arc(-5.5, -27, 2.7, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke();
+    } else {
+      ctx.fillStyle = k.name === "Mittai" ? "#e8a13a" : "#57a773";
+      ctx.beginPath(); ctx.ellipse(-14.5, -27, 2.3, 2.9, 0, 0, 6.29); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-5.5, -27, 2.3, 2.9, 0, 0, 6.29); ctx.fill();
+      ctx.fillStyle = "#1c1c1c";
+      ctx.beginPath(); ctx.ellipse(-14.5, -27, 0.9, 2.3, 0, 0, 6.29); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-5.5, -27, 0.9, 2.3, 0, 0, 6.29); ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath(); ctx.arc(-15.2, -28.4, 0.8, 0, 6.29); ctx.fill();
+      ctx.beginPath(); ctx.arc(-6.2, -28.4, 0.8, 0, 6.29); ctx.fill();
+    }
+    // whiskers
+    ctx.strokeStyle = "rgba(90,90,90,0.65)"; ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-16, -22); ctx.lineTo(-23, -23.5);
+    ctx.moveTo(-16, -20.5); ctx.lineTo(-23, -19.5);
+    ctx.moveTo(-4, -22); ctx.lineTo(3, -23.5);
+    ctx.moveTo(-4, -20.5); ctx.lineTo(3, -19.5);
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -425,53 +562,122 @@
     ctx.translate(x, baseY);
     ctx.scale(s, s);
     var run = Math.sin(ob.phase) * 8;
-    // tail (behind, on the right — fox faces left)
+    var run2 = Math.sin(ob.phase + Math.PI) * 8;
+    var tailWag = Math.sin(ob.phase * 0.7) * 3;
+    // ground shadow
+    ctx.fillStyle = "rgba(60,90,40,0.25)";
+    ctx.beginPath(); ctx.ellipse(2, 2, 36, 5, 0, 0, 6.29); ctx.fill();
+    // bushy tail (behind, on the right — fox faces left): layered fur
+    // with a dark base band and a cream tip
+    ctx.fillStyle = "#c96a12";
+    ctx.beginPath(); ctx.ellipse(36, -31 + tailWag, 22, 12, -0.5, 0, 6.29); ctx.fill();
     ctx.fillStyle = "#e8821e";
-    ctx.beginPath();
-    ctx.ellipse(34, -30 + Math.sin(ob.phase * 0.7) * 3, 20, 10, -0.5, 0, 6.29);
-    ctx.fill();
+    ctx.beginPath(); ctx.ellipse(35, -33 + tailWag, 20, 10.5, -0.5, 0, 6.29); ctx.fill();
     ctx.fillStyle = "#fff3e0";
     ctx.beginPath();
-    ctx.ellipse(48, -36 + Math.sin(ob.phase * 0.7) * 3, 8, 6, -0.5, 0, 6.29);
+    ctx.moveTo(44, -42 + tailWag);
+    ctx.quadraticCurveTo(56, -38 + tailWag, 53, -30 + tailWag);
+    ctx.quadraticCurveTo(50, -24 + tailWag, 42, -26 + tailWag);
+    ctx.quadraticCurveTo(48, -33 + tailWag, 44, -42 + tailWag);
     ctx.fill();
-    // legs
-    ctx.strokeStyle = "#c96a12";
+    // far legs (darker, opposite phase) with dark "sock" paws
+    ctx.strokeStyle = "#b35c0d";
     ctx.lineWidth = 6;
     ctx.lineCap = "round";
     ctx.beginPath();
-    ctx.moveTo(-14, -14); ctx.lineTo(-14 + run, 0);
-    ctx.moveTo(14, -14); ctx.lineTo(14 - run, 0);
+    ctx.moveTo(-10, -15); ctx.lineTo(-10 + run2, -4);
+    ctx.moveTo(16, -15); ctx.lineTo(16 + run, -4);
     ctx.stroke();
-    // body
-    ctx.fillStyle = "#f08c1e";
-    ctx.beginPath(); ctx.ellipse(2, -28, 30, 17, 0, 0, 6.29); ctx.fill();
-    ctx.fillStyle = "#ffe9c9";
-    ctx.beginPath(); ctx.ellipse(-4, -22, 18, 9, 0, 0, 6.29); ctx.fill();
-    // head (left)
-    ctx.fillStyle = "#f08c1e";
-    ctx.beginPath(); ctx.arc(-28, -42, 15, 0, 6.29); ctx.fill();
-    // ears
+    ctx.fillStyle = "#5f3a17";
+    ctx.beginPath(); ctx.ellipse(-10 + run2, -2, 5, 3, 0, 0, 6.29); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(16 + run, -2, 5, 3, 0, 0, 6.29); ctx.fill();
+    // body — russet gradient, darker saddle on the back, cream belly
+    var bodyGrad = ctx.createLinearGradient(0, -48, 0, -8);
+    bodyGrad.addColorStop(0, "#d97a16");
+    bodyGrad.addColorStop(0.45, "#f08c1e");
+    bodyGrad.addColorStop(1, "#f6a83e");
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath(); ctx.ellipse(2, -28, 31, 17.5, 0, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "rgba(255,233,201,0.95)";
+    ctx.beginPath(); ctx.ellipse(-3, -21, 19, 9.5, 0, 0, 6.29); ctx.fill();
+    // jagged chest fur
     ctx.beginPath();
-    ctx.moveTo(-38, -52); ctx.lineTo(-35, -66); ctx.lineTo(-28, -54); ctx.closePath();
-    ctx.moveTo(-24, -54); ctx.lineTo(-17, -65); ctx.lineTo(-13, -51); ctx.closePath();
+    ctx.moveTo(-24, -34); ctx.lineTo(-19, -27); ctx.lineTo(-25, -24);
+    ctx.lineTo(-18, -19); ctx.lineTo(-26, -17);
+    ctx.quadraticCurveTo(-30, -25, -24, -34);
     ctx.fill();
-    // snout
+    // near legs
+    ctx.strokeStyle = "#d97a16";
+    ctx.lineWidth = 6.5;
+    ctx.beginPath();
+    ctx.moveTo(-16, -14); ctx.lineTo(-16 + run, -4);
+    ctx.moveTo(10, -14); ctx.lineTo(10 + run2, -4);
+    ctx.stroke();
+    ctx.fillStyle = "#5f3a17";
+    ctx.beginPath(); ctx.ellipse(-16 + run, -2, 5.5, 3, 0, 0, 6.29); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(10 + run2, -2, 5.5, 3, 0, 0, 6.29); ctx.fill();
+    // ears first (behind head): tall, pointed, dark-backed, cream inner
+    ctx.fillStyle = "#b35c0d";
+    ctx.beginPath();
+    ctx.moveTo(-39, -50); ctx.lineTo(-37, -68); ctx.lineTo(-27, -54); ctx.closePath();
+    ctx.moveTo(-25, -53); ctx.lineTo(-16, -66); ctx.lineTo(-11, -49); ctx.closePath();
+    ctx.fill();
     ctx.fillStyle = "#ffe9c9";
     ctx.beginPath();
-    ctx.moveTo(-40, -46); ctx.lineTo(-52, -38); ctx.lineTo(-39, -34); ctx.closePath();
+    ctx.moveTo(-36.5, -53); ctx.lineTo(-35.8, -63); ctx.lineTo(-29.5, -54); ctx.closePath();
+    ctx.moveTo(-22.5, -53.5); ctx.lineTo(-17.5, -61.5); ctx.lineTo(-14.5, -51); ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = "#333";
-    ctx.beginPath(); ctx.arc(-51, -38.5, 2.8, 0, 6.29); ctx.fill();
-    // eye (mischievous)
-    ctx.beginPath(); ctx.arc(-31, -44, 2.4, 0, 6.29); ctx.fill();
-    ctx.strokeStyle = "#333"; ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.moveTo(-36, -50); ctx.lineTo(-27, -48.5); ctx.stroke();
-    // Neela Nari's blue bandana
+    // head — russet top fading to cream cheeks, spiky cheek fur
+    var headGrad = ctx.createLinearGradient(0, -58, 0, -28);
+    headGrad.addColorStop(0, "#e07f18");
+    headGrad.addColorStop(0.65, "#f08c1e");
+    headGrad.addColorStop(1, "#f9bd6d");
+    ctx.fillStyle = headGrad;
+    ctx.beginPath(); ctx.arc(-27, -42, 15.5, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#ffe9c9";
+    ctx.beginPath();
+    ctx.moveTo(-38, -36); ctx.lineTo(-33, -30); ctx.lineTo(-36, -27);
+    ctx.quadraticCurveTo(-28, -25, -20, -29);
+    ctx.quadraticCurveTo(-24, -33, -24, -37);
+    ctx.quadraticCurveTo(-32, -39, -38, -36);
+    ctx.fill();
+    // long tapered snout with a glossy black nose and a sly grin
+    ctx.fillStyle = "#ffedd0";
+    ctx.beginPath();
+    ctx.moveTo(-39, -47); ctx.lineTo(-54, -39); ctx.lineTo(-53, -35.5);
+    ctx.lineTo(-38, -33.5); ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#22201e";
+    ctx.beginPath(); ctx.ellipse(-53.5, -37.5, 3.4, 2.8, -0.4, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.7)";
+    ctx.beginPath(); ctx.arc(-54.5, -38.6, 1, 0, 6.29); ctx.fill();
+    ctx.strokeStyle = "#7a4416"; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(-44, -32.5, 5, 0.15 * Math.PI, 0.6 * Math.PI); ctx.stroke();
+    // eye — amber with a dark pupil, sparkle, and a mischievous brow
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath(); ctx.ellipse(-30, -44, 3.6, 3, 0, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#e8a13a";
+    ctx.beginPath(); ctx.arc(-30.5, -44, 2.5, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#1c1c1c";
+    ctx.beginPath(); ctx.ellipse(-31, -44, 1.1, 2, 0, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath(); ctx.arc(-31.6, -45.2, 0.8, 0, 6.29); ctx.fill();
+    ctx.strokeStyle = "#7a4416"; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(-36, -50.5); ctx.lineTo(-26, -49); ctx.stroke();
+    // Neela Nari's blue bandana — wrap, knot and spotted tail-end
     if (ob.kind === "neela") {
       ctx.fillStyle = "#2b6cb0";
       ctx.beginPath();
-      ctx.moveTo(-22, -34); ctx.lineTo(-6, -30); ctx.lineTo(-16, -20); ctx.closePath();
+      ctx.moveTo(-23, -33); ctx.lineTo(-5, -29); ctx.lineTo(-8, -21);
+      ctx.lineTo(-20, -23); ctx.closePath();
       ctx.fill();
+      ctx.beginPath(); ctx.arc(-6, -27, 3.6, 0, 6.29); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-4, -25); ctx.lineTo(3, -18); ctx.lineTo(-3, -14); ctx.lineTo(-6, -21);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#bee3f8";
+      ctx.beginPath(); ctx.arc(-15, -27.5, 1.4, 0, 6.29); ctx.fill();
+      ctx.beginPath(); ctx.arc(-10, -24.5, 1.2, 0, 6.29); ctx.fill();
     }
     ctx.restore();
   }
@@ -494,65 +700,148 @@
     var armSwing = inba.grounded ? Math.sin(ph) * 9 : -6;
     var bounce = inba.grounded ? Math.abs(Math.sin(ph)) * 2.4 : 0;
     ctx.translate(0, -bounce);
-
-    // cape (red, flowing behind to the left)
-    var wave = Math.sin(frame * 0.18) * 5;
-    ctx.fillStyle = "#d92b2b";
-    ctx.beginPath();
-    ctx.moveTo(20, -72);
-    ctx.quadraticCurveTo(-16, -64 + wave, -26, -40 + wave);
-    ctx.quadraticCurveTo(-8, -38, 16, -44);
-    ctx.closePath();
-    ctx.fill();
-
-    // legs
-    ctx.strokeStyle = "#8a4b23";
-    ctx.lineWidth = 7;
     ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(22, -34); ctx.lineTo(22 + legSwing, 0 - (inba.grounded ? 0 : 8));
-    ctx.moveTo(22, -34); ctx.lineTo(22 - legSwing, 0 - (inba.grounded ? 2 : 2));
-    ctx.stroke();
-    // shoes
-    ctx.fillStyle = "#c1272d";
-    ctx.beginPath(); ctx.arc(24 + legSwing, -1 - (inba.grounded ? 0 : 8), 5, 0, 6.29); ctx.fill();
-    ctx.beginPath(); ctx.arc(20 - legSwing, -1 - (inba.grounded ? 2 : 2), 5, 0, 6.29); ctx.fill();
 
-    // dress
-    ctx.fillStyle = "#7b4fd0";
+    // Foot positions for this stride (front foot strides, back foot trails)
+    var fFootX = 24 + legSwing, fFootY = inba.grounded ? -1 : -9;
+    var bFootX = 20 - legSwing, bFootY = inba.grounded ? -3 : -2;
+    var fKneeX = 26 + legSwing * 0.45, fKneeY = -19;
+    var bKneeX = 18 - legSwing * 0.35, bKneeY = -18;
+
+    // cape (red gradient with a darker fold, flowing behind to the left)
+    var wave = Math.sin(frame * 0.18) * 5;
+    var capeGrad = ctx.createLinearGradient(-26, -70, 20, -40);
+    capeGrad.addColorStop(0, "#a31616");
+    capeGrad.addColorStop(0.6, "#d92b2b");
+    capeGrad.addColorStop(1, "#ef4444");
+    ctx.fillStyle = capeGrad;
     ctx.beginPath();
-    ctx.moveTo(12, -70);
-    ctx.lineTo(33, -70);
-    ctx.lineTo(40, -32);
-    ctx.lineTo(5, -32);
+    ctx.moveTo(20, -73);
+    ctx.quadraticCurveTo(-16, -64 + wave, -27, -38 + wave);
+    ctx.quadraticCurveTo(-10, -34, 17, -42);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = "#ffd166";
-    ctx.fillRect(5, -38, 35, 5);
+    ctx.strokeStyle = "rgba(120,10,10,0.55)"; ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(8, -66);
+    ctx.quadraticCurveTo(-8, -56 + wave, -16, -42 + wave);
+    ctx.stroke();
 
-    // arm (front, swinging)
+    // back arm (slightly darker skin, swings opposite)
     ctx.strokeStyle = "#8a4b23";
     ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.moveTo(30, -66); ctx.lineTo(34 + armSwing, -48);
+    ctx.moveTo(17, -65); ctx.lineTo(13 - armSwing * 0.8, -49);
     ctx.stroke();
+    ctx.fillStyle = "#8a4b23";
+    ctx.beginPath(); ctx.arc(13 - armSwing * 0.8, -48, 3.4, 0, 6.29); ctx.fill();
 
-    // head
-    ctx.fillStyle = "#a05c2c";
-    ctx.beginPath(); ctx.arc(23, -84, 13.5, 0, 6.29); ctx.fill();
-    // hair + ponytail
-    ctx.fillStyle = "#1d1d22";
-    ctx.beginPath(); ctx.arc(21, -88, 13.5, Math.PI * 0.95, Math.PI * 1.95); ctx.fill();
+    // legs — two segments each (thigh + shin) so the knees bend as she runs
+    ctx.strokeStyle = "#a05c2c";
+    ctx.lineWidth = 7;
+    ctx.beginPath(); // back leg
+    ctx.moveTo(20, -34); ctx.lineTo(bKneeX, bKneeY); ctx.lineTo(bFootX, bFootY - 2);
+    ctx.stroke();
+    ctx.strokeStyle = "#b06a34";
+    ctx.beginPath(); // front leg
+    ctx.moveTo(23, -34); ctx.lineTo(fKneeX, fKneeY); ctx.lineTo(fFootX, fFootY - 2);
+    ctx.stroke();
+    // shoes — red with a white sole and toe highlight
+    function shoe(sx, sy) {
+      ctx.fillStyle = "#c1272d";
+      ctx.beginPath(); ctx.ellipse(sx + 1, sy - 1, 6.5, 4.2, 0, 0, 6.29); ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath(); ctx.ellipse(sx + 1, sy + 1.8, 6.5, 1.8, 0, 0, 6.29); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      ctx.beginPath(); ctx.ellipse(sx + 3.5, sy - 2.4, 2.4, 1.2, -0.3, 0, 6.29); ctx.fill();
+    }
+    shoe(bFootX, bFootY);
+    shoe(fFootX, fFootY);
+
+    // dress — purple gradient, soft fold lines, gold waist band
+    var dressGrad = ctx.createLinearGradient(5, -72, 40, -30);
+    dressGrad.addColorStop(0, "#8a5fe0");
+    dressGrad.addColorStop(1, "#6840b8");
+    ctx.fillStyle = dressGrad;
     ctx.beginPath();
-    ctx.ellipse(8, -80 + Math.sin(frame * 0.18) * 2, 5.5, 11, 0.35, 0, 6.29);
+    ctx.moveTo(12, -70);
+    ctx.lineTo(33, -70);
+    ctx.lineTo(41, -31);
+    ctx.quadraticCurveTo(22, -26, 4, -31);
+    ctx.closePath();
     ctx.fill();
+    ctx.strokeStyle = "rgba(60,30,110,0.45)"; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(18, -58); ctx.quadraticCurveTo(19, -44, 15, -32);
+    ctx.moveTo(29, -58); ctx.quadraticCurveTo(30, -44, 32, -32);
+    ctx.stroke();
     ctx.fillStyle = "#ffd166";
-    ctx.beginPath(); ctx.arc(13, -90, 3.4, 0, 6.29); ctx.fill();
-    // face
-    ctx.fillStyle = "#1d1d22";
-    ctx.beginPath(); ctx.arc(28, -84, 1.9, 0, 6.29); ctx.fill();
-    ctx.strokeStyle = "#1d1d22"; ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.arc(27, -78.5, 4, 0.2 * Math.PI, 0.75 * Math.PI); ctx.stroke();
+    ctx.fillRect(5, -38, 35, 5);
+    ctx.fillStyle = "#e8a90c";
+    ctx.fillRect(5, -34.5, 35, 1.6);
+
+    // front arm (sleeve puff, forearm, hand)
+    ctx.fillStyle = "#7b4fd0";
+    ctx.beginPath(); ctx.arc(30, -65, 5.5, 0, 6.29); ctx.fill();
+    ctx.strokeStyle = "#b06a34";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(30, -64); ctx.lineTo(35 + armSwing, -49);
+    ctx.stroke();
+    ctx.fillStyle = "#b06a34";
+    ctx.beginPath(); ctx.arc(35 + armSwing, -48, 3.6, 0, 6.29); ctx.fill();
+
+    // neck + head — warm skin gradient, ear, soft jaw shading
+    ctx.fillStyle = "#a05c2c";
+    ctx.fillRect(19, -76, 8, 7);
+    var skinGrad = ctx.createRadialGradient(27, -88, 3, 23, -84, 15);
+    skinGrad.addColorStop(0, "#c07c44");
+    skinGrad.addColorStop(1, "#a05c2c");
+    ctx.fillStyle = skinGrad;
+    ctx.beginPath(); ctx.arc(23, -84, 13.5, 0, 6.29); ctx.fill();
+    ctx.beginPath(); ctx.arc(11.5, -83, 2.8, 0, 6.29); ctx.fill(); // ear
+    ctx.fillStyle = "#8a4b23";
+    ctx.beginPath(); ctx.arc(11.5, -83, 1.3, 0, 6.29); ctx.fill();
+    // hair — cap with a side part, long ponytail with highlight strands
+    ctx.fillStyle = "#232228";
+    ctx.beginPath(); ctx.arc(21.5, -87.5, 13.8, Math.PI * 0.88, Math.PI * 2.02); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(9, -92);
+    ctx.quadraticCurveTo(4, -78 + Math.sin(frame * 0.18) * 2, 8, -64 + Math.sin(frame * 0.18) * 3);
+    ctx.quadraticCurveTo(13, -62, 14, -74);
+    ctx.quadraticCurveTo(14, -86, 12, -93);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(120,120,150,0.6)"; ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(16, -96); ctx.quadraticCurveTo(10, -88, 11, -78);
+    ctx.moveTo(21, -97); ctx.quadraticCurveTo(17, -90, 18, -82);
+    ctx.stroke();
+    ctx.fillStyle = "#ffd166"; // hair tie
+    ctx.beginPath(); ctx.arc(12.5, -91, 3.4, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#fff3c4";
+    ctx.beginPath(); ctx.arc(12.5, -91, 1.4, 0, 6.29); ctx.fill();
+    // face — brow, eye with lashes and sparkle, nose, smile, blush
+    ctx.strokeStyle = "#4a2c14"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(25.5, -90.5); ctx.quadraticCurveTo(29, -92, 32, -90.5); ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath(); ctx.ellipse(28.5, -85.5, 3.1, 2.6, 0, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#3a2410";
+    ctx.beginPath(); ctx.arc(29.3, -85.5, 1.9, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#120d08";
+    ctx.beginPath(); ctx.arc(29.6, -85.5, 1, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath(); ctx.arc(30.2, -86.4, 0.7, 0, 6.29); ctx.fill();
+    ctx.strokeStyle = "#120d08"; ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(31.5, -87.5); ctx.lineTo(33.5, -88.5); // lash flick
+    ctx.stroke();
+    ctx.strokeStyle = "#8a4b23"; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.arc(34.5, -82, 2.2, Math.PI * 0.35, Math.PI * 0.95); ctx.stroke(); // nose
+    ctx.strokeStyle = "#7a3410";
+    ctx.beginPath(); ctx.moveTo(26, -78.5); ctx.quadraticCurveTo(28.5, -76.8, 31.5, -78); ctx.stroke(); // smile
+    ctx.fillStyle = "rgba(255,120,130,0.35)"; // blush
+    ctx.beginPath(); ctx.ellipse(25, -79.5, 3.2, 1.9, 0, 0, 6.29); ctx.fill();
     ctx.restore();
   }
 

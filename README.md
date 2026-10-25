@@ -14,8 +14,10 @@ original stories and read them one by one.
   browser's built-in speech voice, highlighting each paragraph as it goes.
 - **A game!** — *Inba: Kitten Rescue* (`game.html`): a Mario-style runner
   where Inba jumps over the funny foxes and frees her kittens from cages,
-  with "Inba Super Girl Paattu" playing softly and cheerful sound effects.
-  Linked from the home page and from Inba's story page.
+  with "Inba Super Girl Paattu" playing very softly and distinct sound
+  effects for jumping, kitten rescues, fox catches and lost hearts.
+  Snappy jumps, a cape double-jump, and 10 hearts. Linked from the home
+  page and from Inba's story page.
 - **Animations everywhere** — drifting clouds, twinkling stars, bobbing
   balloons, bouncing titles, wiggling "Read me" arrows, and a shiny sweep
   across every story picture. Respects `prefers-reduced-motion`.
