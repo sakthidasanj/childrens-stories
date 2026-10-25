@@ -14,8 +14,22 @@
   var soundBtn = document.getElementById("soundBtn");
   var bgSong = document.getElementById("bgSong");
   bgSong.volume = 0.08; // song sits quietly under the action and the effects
-  var akkaVoice = document.getElementById("akkaVoice");
-  if (akkaVoice) akkaVoice.volume = 0.9;
+  // Sakthidasan's OWN recorded praise clips for the kittens (7 takes,
+  // recorded on his phone 2026-10-25). Played at random, less often.
+  var PRAISE_CLIPS = [
+    "media/praise-1.mp3", "media/praise-2.mp3", "media/praise-3.mp3",
+    "media/praise-4.mp3", "media/praise-5.mp3", "media/praise-6.mp3",
+    "media/praise-7.mp3"
+  ];
+  var praiseAudios = [];
+  for (var pi = 0; pi < PRAISE_CLIPS.length; pi++) {
+    try {
+      var pa = new Audio(PRAISE_CLIPS[pi]);
+      pa.preload = "auto";
+      pa.volume = 0.9;
+      praiseAudios.push(pa);
+    } catch (e) { /* clip unavailable — praise just stays silent */ }
+  }
 
   /* ================= Sound effects (WebAudio) ================= */
   var audioCtx = null;
@@ -62,14 +76,15 @@
     tone(980, 720, 0.11, "triangle", 0.07, when + 0.3);
   }
   function sfxKittenVoice() {
-    // Occasionally a freed kitten cheers with the captured voice clip
-    // saying "Inba akka vaazhga!" (media/inba-akka-vaazhga.mp3) — a
-    // real audio file, not a live automated voice in the browser.
-    // If the clip can't load, this stays silent — the meow still plays.
-    if (!soundOn || !akkaVoice) return;
+    // A freed kitten praises Inba in Sakthidasan's OWN recorded voice:
+    // one of his 7 praise clips ("Inba akka vaazhga!" and friends),
+    // picked at random. Real recordings — never an automated voice.
+    // If a clip can't load, this stays silent — the meow still plays.
+    if (!soundOn || !praiseAudios.length) return;
+    var clip = praiseAudios[Math.floor(Math.random() * praiseAudios.length)];
     try {
-      akkaVoice.currentTime = 0;
-      var p = akkaVoice.play();
+      clip.currentTime = 0;
+      var p = clip.play();
       if (p && p.catch) p.catch(function () {});
     } catch (e) { /* recording not loaded yet */ }
   }
@@ -215,11 +230,11 @@
       kitten: ob.kitten, x: ob.x + 20, y: GROUND, vy: -9.5, vx: 4.6, phase: 0
     });
     floaters.push({ text: "🎉 " + ob.kitten.name + " saved! +100", x: ob.x, y: GROUND - 130, life: 70 });
-    // Occasionally (about 1 rescue in 4) the kitten cheers with the
-    // recorded voice: "Inba akka vaazhga!"
-    if (rescued % 5 === 3 || Math.random() < 0.08) {
+    // Less often (about 1 rescue in 6) the kitten praises Inba with
+    // one of his own recorded voice clips, picked at random.
+    if (Math.random() < 0.17) {
       sfxKittenVoice();
-      floaters.push({ text: "🐱 “Inba akka vaazhga!”", x: ob.x + 10, y: GROUND - 168, life: 80 });
+      floaters.push({ text: "🐱💛 “Inba akka vaazhga!”", x: ob.x + 10, y: GROUND - 168, life: 80 });
     }
     burst(ob.x + 37, GROUND - 60, "#ffd166", 14);
     updateHUD();
@@ -949,7 +964,7 @@
     soundBtn.textContent = soundOn ? "🔊 Sound: On" : "🔇 Sound: Off";
     if (!soundOn) {
       bgSong.pause();
-      try { if (akkaVoice) akkaVoice.pause(); } catch (e) {}
+      try { for (var qi = 0; qi < praiseAudios.length; qi++) praiseAudios[qi].pause(); } catch (e) {}
     }
     else if (state === "playing") { ensureAudio(); bgSong.play().catch(function () {}); }
   });
