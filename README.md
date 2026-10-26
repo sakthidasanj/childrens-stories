@@ -33,8 +33,13 @@ original stories and read them one by one.
   in Sakthidasan's own recorded voice, one of his 9 "be careful!"
   clips (`media/careful-1.mp3` … `media/careful-9.mp3`) at random.
   When the 2 minutes end, a scorecard ranks all players by foxes
-  survived (distance breaks ties); it is kept in the browser's
-  local storage, top 10, and also shows on the start screen.
+  survived (distance breaks ties), top 10, also shown on the start
+  screen. The scorecard is SHARED by all players on all devices: it
+  is one flat JSON file in Cloudflare KV storage, served by a Pages
+  Function (`functions/api/scores.js`, endpoint `/api/scores`).
+  One-time owner setup for the storage binding: see
+  `SCORECARD-SETUP.md`. If the endpoint is unreachable the game
+  falls back to a per-device card in the browser — play never breaks.
   Snappy jumps and a cape double-jump. Inba's cape hangs
   still while she runs and streams out fluidly when she jumps; every
   freed kitten meows with one of Sakthidasan's own recorded meow

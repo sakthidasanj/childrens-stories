@@ -196,11 +196,17 @@
   /* ===== Timed runs + scorecard (added 2026-10-25 at the user's ask):
      type your name, run for 2 minutes, and the scorecard ranks players
      by how many foxes they SURVIVED (jumped/passed without a catch);
-     distance breaks ties. The scorecard lives in this browser's
-     localStorage, so it is per-device. ===== */
+     distance breaks ties. The scorecard is SHARED across devices: it
+     lives as one flat JSON file inside Cloudflare's storage, served by
+     /api/scores (see functions/api/scores.js). If that endpoint is not
+     reachable (site opened locally, storage not bound yet), the game
+     quietly falls back to this browser's localStorage card, so play
+     never breaks. ===== */
   var RUN_SECONDS = 120;
+  var SCORES_API = "/api/scores";
   var playerName = "Player";
   var timeLeft = RUN_SECONDS, foxesDodged = 0, distanceM = 0, lastEntry = null;
+  var sharedCard = null; // top scores from Cloudflare, once fetched
 
   function loadCard() {
     try {
@@ -218,8 +224,43 @@
     });
     return arr;
   }
-  function renderCard(listEl, cardEl, limit) {
-    var arr = sortCard(loadCard()).slice(0, limit);
+  // The best list we can show right now: the shared Cloudflare card if
+  // we have it, otherwise this device's local card.
+  function bestCard() {
+    return sharedCard || sortCard(loadCard());
+  }
+  function fetchShared() {
+    if (typeof fetch !== "function") return Promise.resolve(false);
+    return fetch(SCORES_API, { headers: { "accept": "application/json" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (data && data.ok && Array.isArray(data.scores)) {
+          sharedCard = data.scores;
+          return true;
+        }
+        return false;
+      })
+      .catch(function () { return false; });
+  }
+  function submitShared(entry) {
+    if (typeof fetch !== "function") return Promise.resolve(false);
+    return fetch(SCORES_API, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(entry)
+    })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (data && data.ok && Array.isArray(data.scores)) {
+          sharedCard = data.scores;
+          return true;
+        }
+        return false;
+      })
+      .catch(function () { return false; });
+  }
+  function renderCard(listEl, cardEl, limit, source) {
+    var arr = sortCard((source || bestCard()).slice()).slice(0, limit);
     listEl.innerHTML = "";
     if (!arr.length) {
       var empty = document.createElement("li");
@@ -351,6 +392,18 @@
     if (soundOn) { bgSong.currentTime = 0; bgSong.play().catch(function () {}); }
   }
 
+  function showEndSummary(arr) {
+    var rank = 0;
+    for (var ri = 0; ri < arr.length; ri++) {
+      if (arr[ri].ts === lastEntry.ts) { rank = ri + 1; break; }
+    }
+    endSummary.textContent = playerName + " survived 🦊 " + lastEntry.foxes +
+      " foxes, ran 🏃 " + lastEntry.dist + " m and rescued 🐱 " + lastEntry.kittens +
+      " kittens!" + (rank === 1 ? " 🏆 New top score!"
+        : rank > 0 ? " (Scorecard rank #" + rank + ")"
+        : " (just outside the top 10)");
+  }
+
   function endRun() {
     state = "over";
     timeLeft = 0;
@@ -361,19 +414,21 @@
       dist: Math.floor(distanceM), kittens: rescued,
       ts: Date.now()
     };
+    // Always keep this device's local mirror…
     var arr = loadCard();
     arr.push(lastEntry);
     saveCard(sortCard(arr).slice(0, 10));
-    var saved = sortCard(loadCard());
-    var rank = 0;
-    for (var ri = 0; ri < saved.length; ri++) {
-      if (saved[ri].ts === lastEntry.ts) { rank = ri + 1; break; }
-    }
-    endSummary.textContent = playerName + " survived 🦊 " + foxesDodged +
-      " foxes, ran 🏃 " + Math.floor(distanceM) + " m and rescued 🐱 " + rescued +
-      " kittens!" + (rank === 1 ? " 🏆 New top score!" : " (Scorecard rank #" + rank + ")");
+    showEndSummary(sortCard(loadCard()));
     renderCard(endCardList, null, 10);
     endOverlay.hidden = false;
+    // …and send the score to the shared Cloudflare file. When it
+    // answers, refresh the scorecard + rank with the shared truth.
+    submitShared(lastEntry).then(function (ok) {
+      if (ok && state === "over") {
+        showEndSummary(sharedCard);
+        renderCard(endCardList, null, 10);
+      }
+    });
   }
 
   function hitFox(ob) {
@@ -1361,6 +1416,9 @@
     state = "ready";
     renderCard(startCardList, startCard, 5);
     startOverlay.hidden = false;
+    fetchShared().then(function (ok) {
+      if (ok && state === "ready") renderCard(startCardList, startCard, 5);
+    });
     try { nameInput.focus(); nameInput.select(); } catch (e) {}
   });
   // Enter inside the name box starts the run right away
@@ -1411,5 +1469,9 @@
     if (savedName) nameInput.value = savedName;
   } catch (e) {}
   renderCard(startCardList, startCard, 5);
+  // Then swap in the shared Cloudflare scorecard as soon as it arrives.
+  fetchShared().then(function (ok) {
+    if (ok && state === "ready") renderCard(startCardList, startCard, 5);
+  });
   requestAnimationFrame(loop);
 })();
