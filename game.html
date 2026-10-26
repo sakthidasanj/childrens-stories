@@ -161,6 +161,38 @@
     margin-top: 6px;
   }
   .play-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #1e9455; }
+  .name-label {
+    font-family: "Fredoka", sans-serif; font-weight: 600;
+    color: #fff; font-size: 1.05rem; text-shadow: 0 2px 4px #14467f99;
+  }
+  .name-input {
+    font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 1.15rem;
+    text-align: center; color: #14467f;
+    border: 3px solid #ffd166; border-radius: 999px;
+    padding: 9px 18px; width: min(280px, 80vw); outline: none;
+    background: #fffffff2;
+  }
+  .name-input:focus { border-color: #ff6b9d; }
+  .scorecard {
+    background: #ffffffd9; border: 3px solid #ffd166; border-radius: 16px;
+    padding: 10px 16px; max-width: min(480px, 88vw); width: 100%;
+    max-height: 38vh; overflow-y: auto;
+  }
+  .scorecard h3 {
+    font-family: "Fredoka", sans-serif; color: #14467f;
+    font-size: 1.02rem; margin-bottom: 6px;
+  }
+  .scorecard ol { list-style: none; }
+  .scorecard li {
+    display: flex; gap: 8px; align-items: baseline;
+    font-weight: 700; color: #33396b; font-size: 0.98rem;
+    padding: 3px 6px; border-radius: 8px; text-align: left;
+  }
+  .scorecard li .who { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .scorecard li.me { background: #ffe9a8; outline: 2px solid #ffb703; }
+  .scorecard .empty { font-weight: 700; color: #5a6080; }
+  .start-card { max-height: 26vh; }
+  .icon-btn.light { background: #ffffffcc; margin-top: 2px; }
   .hint {
     margin-top: 12px;
     font-weight: 700;
@@ -186,8 +218,10 @@
 </div>
 
 <div class="hud" aria-label="Game status">
+  <span class="hud-chip" id="timeChip" title="Time left">⏱ 2:00</span>
+  <span class="hud-chip" id="foxChip" title="Foxes survived">🦊 Foxes: 0</span>
   <span class="hud-chip" id="kittensChip" title="Kittens rescued">🐱 Rescued: 0</span>
-  <span class="hud-chip" id="scoreChip" title="Score">⭐ Score: 0</span>
+  <span class="hud-chip" id="distChip" title="Distance run">🏃 0 m</span>
   <span class="hud-spacer"></span>
   <button class="icon-btn" id="soundBtn" type="button">🔊 Sound: On</button>
   <button class="icon-btn" id="restartBtn" type="button">↻ Restart</button>
@@ -200,11 +234,31 @@
   <div class="overlay" id="startOverlay">
     <div class="big" aria-hidden="true">🦸‍♀️🐱🦊</div>
     <h2>Help Inba rescue her poonai kutties!</h2>
-    <p>Jump over the funny foxes — Kuttai Nari and Neela Nari.<br />
+    <p>You have <b>2 minutes</b>! Jump over the funny foxes — every fox you
+    pass counts. 🦊<br />
     Run past a cage and the kitten inside pops free! 🎉<br />
-    Press <b>Space</b> or <b>tap</b> to jump — press it again in the air for a cape double-jump!<br />
-    No lives to lose — if a fox catches you, just be careful and keep running!</p>
-    <button class="play-btn" id="playBtn" type="button">▶ Play</button>
+    Press <b>Space</b> or <b>tap</b> to jump — again in the air for a cape double-jump!<br />
+    If a fox catches you, that fox does not count — just be careful and keep running!</p>
+    <label class="name-label" for="nameInput">✏️ Your name:</label>
+    <input class="name-input" id="nameInput" type="text" maxlength="14"
+      placeholder="Type your name…" autocomplete="off" />
+    <button class="play-btn" id="playBtn" type="button">▶ Start — 2 minutes!</button>
+    <div class="scorecard start-card" id="startCard" hidden>
+      <h3>🏆 Scorecard — best fox survivors</h3>
+      <ol id="startCardList"></ol>
+    </div>
+  </div>
+
+  <div class="overlay" id="endOverlay" hidden>
+    <div class="big" aria-hidden="true">🏁⏰</div>
+    <h2>Time's up!</h2>
+    <p id="endSummary"></p>
+    <div class="scorecard" id="endCard">
+      <h3>🏆 Scorecard — best fox survivors</h3>
+      <ol id="endCardList"></ol>
+    </div>
+    <button class="play-btn" id="againBtn" type="button">▶ Play again</button>
+    <button class="icon-btn light" id="changeNameBtn" type="button">✏️ Change name</button>
   </div>
 </div>
 

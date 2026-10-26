@@ -26,11 +26,16 @@ original stories and read them one by one.
   The game page fills the whole phone screen (the play area grows
   as large as the screen allows), with a ⛶ Full screen button
   that also turns the game sideways on phones.
-  Snappy jumps and a cape double-jump. There are no lives or hearts —
-  the run is endless, and a fox catch just tells Inba to be careful —
+  Each run is a 2-minute challenge: the player types their name,
+  then a countdown timer, a fox counter and a distance marker run
+  while they play. There are no lives or hearts — a fox catch just
+  means that fox does not count, and Inba is told to be careful
   in Sakthidasan's own recorded voice, one of his 9 "be careful!"
   clips (`media/careful-1.mp3` … `media/careful-9.mp3`) at random.
-  Inba's cape hangs
+  When the 2 minutes end, a scorecard ranks all players by foxes
+  survived (distance breaks ties); it is kept in the browser's
+  local storage, top 10, and also shows on the start screen.
+  Snappy jumps and a cape double-jump. Inba's cape hangs
   still while she runs and streams out fluidly when she jumps; every
   freed kitten meows with one of Sakthidasan's own recorded meow
   clips (`media/meow-1.mp3` … `media/meow-8.mp3`, a random one every

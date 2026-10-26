@@ -9,8 +9,16 @@
   var GROUND = H - 78;    // y of the ground surface
 
   var kittensChip = document.getElementById("kittensChip");
-  var scoreChip = document.getElementById("scoreChip");
+  var timeChip = document.getElementById("timeChip");
+  var foxChip = document.getElementById("foxChip");
+  var distChip = document.getElementById("distChip");
   var startOverlay = document.getElementById("startOverlay");
+  var endOverlay = document.getElementById("endOverlay");
+  var nameInput = document.getElementById("nameInput");
+  var endSummary = document.getElementById("endSummary");
+  var endCardList = document.getElementById("endCardList");
+  var startCard = document.getElementById("startCard");
+  var startCardList = document.getElementById("startCardList");
   var soundBtn = document.getElementById("soundBtn");
   var bgSong = document.getElementById("bgSong");
   bgSong.volume = 0.04; // song sits very quietly under the action (halved again 2026-10-25 at the user's request)
@@ -178,11 +186,66 @@
   var JUMP_V = -13.2;
   var DOUBLE_JUMP_V = -11.2;
 
-  var state = "ready"; // ready | playing — no lives, so no game over:
-  // the run is endless until the player restarts it themselves.
+  var state = "ready"; // ready | playing | over — no lives and no
+  // game over from foxes; a run ends only when the 2 minutes run out,
+  // and then the scorecard shows (see RUN_SECONDS below).
   var inba, obstacles, freedKittens, floaters, particles;
-  var rescued, score, speed, frame, spawnIn, kittenCycle, shake;
+  var rescued, speed, frame, spawnIn, kittenCycle, shake;
   var lastFoxGait = null; // a gallop widens the gap before the next obstacle
+
+  /* ===== Timed runs + scorecard (added 2026-10-25 at the user's ask):
+     type your name, run for 2 minutes, and the scorecard ranks players
+     by how many foxes they SURVIVED (jumped/passed without a catch);
+     distance breaks ties. The scorecard lives in this browser's
+     localStorage, so it is per-device. ===== */
+  var RUN_SECONDS = 120;
+  var playerName = "Player";
+  var timeLeft = RUN_SECONDS, foxesDodged = 0, distanceM = 0, lastEntry = null;
+
+  function loadCard() {
+    try {
+      var raw = window.localStorage.getItem("inbaScorecardV1");
+      var arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+  }
+  function saveCard(arr) {
+    try { window.localStorage.setItem("inbaScorecardV1", JSON.stringify(arr)); } catch (e) {}
+  }
+  function sortCard(arr) {
+    arr.sort(function (a, b) {
+      return (b.foxes - a.foxes) || (b.dist - a.dist) || (b.kittens - a.kittens);
+    });
+    return arr;
+  }
+  function renderCard(listEl, cardEl, limit) {
+    var arr = sortCard(loadCard()).slice(0, limit);
+    listEl.innerHTML = "";
+    if (!arr.length) {
+      var empty = document.createElement("li");
+      empty.className = "empty";
+      empty.textContent = "No runs yet — be the first! 🦊";
+      listEl.appendChild(empty);
+      if (cardEl) cardEl.hidden = false;
+      return;
+    }
+    var medals = ["🥇", "🥈", "🥉"];
+    for (var i = 0; i < arr.length; i++) {
+      var en = arr[i];
+      var li = document.createElement("li");
+      if (lastEntry && en.ts === lastEntry.ts) li.className = "me";
+      var rank = document.createElement("span");
+      rank.textContent = medals[i] || (i + 1) + ".";
+      var who = document.createElement("span");
+      who.className = "who";
+      who.textContent = en.name;
+      var stats = document.createElement("span");
+      stats.textContent = "🦊 " + en.foxes + " · 🏃 " + en.dist + " m · 🐱 " + en.kittens;
+      li.appendChild(rank); li.appendChild(who); li.appendChild(stats);
+      listEl.appendChild(li);
+    }
+    if (cardEl) cardEl.hidden = false;
+  }
 
   function reset() {
     inba = { x: 130, y: GROUND, vy: 0, grounded: true, runPhase: 0, invincible: 0, jumps: 0, jumpBuffer: 0, capeLift: 0, capeFlare: 0 };
@@ -191,18 +254,26 @@
     floaters = [];
     particles = [];
     rescued = 0;
-    score = 0;
     speed = 5;
     frame = 0;
     spawnIn = 380;
     kittenCycle = 0;
     shake = 0;
+    timeLeft = RUN_SECONDS;
+    foxesDodged = 0;
+    distanceM = 0;
     updateHUD();
   }
 
+  function fmtTime(s) {
+    s = Math.max(0, Math.ceil(s));
+    return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2);
+  }
   function updateHUD() {
+    timeChip.textContent = "⏱ " + fmtTime(timeLeft);
+    foxChip.textContent = "🦊 Foxes: " + foxesDodged;
     kittensChip.textContent = "🐱 Rescued: " + rescued;
-    scoreChip.textContent = "⭐ Score: " + Math.floor(score);
+    distChip.textContent = "🏃 " + Math.floor(distanceM) + " m";
   }
 
   /* ================= Spawning ================= */
@@ -270,10 +341,39 @@
 
   function startGame() {
     ensureAudio();
+    var n = (nameInput.value || "").trim();
+    playerName = n ? n.slice(0, 14) : "Player";
+    try { window.localStorage.setItem("inbaPlayerName", playerName); } catch (e) {}
     reset();
     state = "playing";
     startOverlay.hidden = true;
+    endOverlay.hidden = true;
     if (soundOn) { bgSong.currentTime = 0; bgSong.play().catch(function () {}); }
+  }
+
+  function endRun() {
+    state = "over";
+    timeLeft = 0;
+    updateHUD();
+    bgSong.pause();
+    lastEntry = {
+      name: playerName, foxes: foxesDodged,
+      dist: Math.floor(distanceM), kittens: rescued,
+      ts: Date.now()
+    };
+    var arr = loadCard();
+    arr.push(lastEntry);
+    saveCard(sortCard(arr).slice(0, 10));
+    var saved = sortCard(loadCard());
+    var rank = 0;
+    for (var ri = 0; ri < saved.length; ri++) {
+      if (saved[ri].ts === lastEntry.ts) { rank = ri + 1; break; }
+    }
+    endSummary.textContent = playerName + " survived 🦊 " + foxesDodged +
+      " foxes, ran 🏃 " + Math.floor(distanceM) + " m and rescued 🐱 " + rescued +
+      " kittens!" + (rank === 1 ? " 🏆 New top score!" : " (Scorecard rank #" + rank + ")");
+    renderCard(endCardList, null, 10);
+    endOverlay.hidden = false;
   }
 
   function hitFox(ob) {
@@ -291,7 +391,6 @@
   function freeKitten(ob) {
     ob.freed = true;
     rescued++;
-    score += 100;
     sfxRescue(); // includes the meow, every time
     var esc = ob.kitten.escape || "hop";
     freedKittens.push({
@@ -299,7 +398,7 @@
       vy: esc === "dash" ? -2.5 : esc === "leap" ? -11 : esc === "tiny" ? -6.5 : -9.5,
       vx: ob.kitten.vx || 4.6, escape: esc, phase: 0, spin: 0
     });
-    floaters.push({ text: "🎉 " + ob.kitten.name + " saved! +100", x: ob.x, y: GROUND - 130, life: 70 });
+    floaters.push({ text: "🎉 " + ob.kitten.name + " saved!", x: ob.x, y: GROUND - 130, life: 70 });
     // Less often (about 1 rescue in 6) the kitten praises Inba with
     // one of his own recorded voice clips, picked at random.
     if (Math.random() < 0.17) {
@@ -326,6 +425,12 @@
   function update(dt) {
     frame += dt;
     speed = Math.min(8.6, 5 + frame * 0.0013);
+
+    // The 2-minute countdown and the distance marker
+    timeLeft -= dt / 60;
+    distanceM += speed * dt * 0.045;
+    if (timeLeft <= 0) { endRun(); return; }
+    updateHUD();
 
     // Inba physics
     inba.vy += GRAVITY * dt;
@@ -356,9 +461,6 @@
     spawnIn -= speed * dt;
     if (spawnIn <= 0) spawnNext();
 
-    // Distance score
-    score += speed * dt * 0.055;
-
     // Obstacles
     for (var i = obstacles.length - 1; i >= 0; i--) {
       var ob = obstacles[i];
@@ -374,6 +476,13 @@
           var ix = inba.x + 16, iy = inba.y - 80, iw = 26, ih = 80;
           var fx = ob.x + 15, fy = GROUND - ob.h + 15, fw = ob.w - 30, fh = ob.h - 17;
           if (ix < fx + fw && ix + iw > fx && iy < fy + fh && iy + ih > fy) hitFox(ob);
+        }
+        // Survived! The fox slipped past Inba without catching her —
+        // that is the number the scorecard ranks by.
+        if (!ob.counted && ob.x + ob.w < inba.x) {
+          ob.counted = true;
+          foxesDodged++;
+          updateHUD();
         }
       } else if (ob.type === "cage") {
         if (ob.freed && ob.door < 1) ob.door = Math.min(1, ob.door + dt * 0.08);
@@ -1233,10 +1342,12 @@
 
   /* ================= Input ================= */
   document.addEventListener("keydown", function (e) {
+    // Typing a name must never trigger a jump or a start (Space included)
+    if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
     if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") {
       e.preventDefault();
       if (state === "playing") jump();
-      else startGame();
+      else if (state === "ready") startGame();
     }
   });
   document.getElementById("stage").addEventListener("pointerdown", function (e) {
@@ -1244,6 +1355,18 @@
   });
   document.getElementById("playBtn").addEventListener("click", startGame);
   document.getElementById("restartBtn").addEventListener("click", startGame);
+  document.getElementById("againBtn").addEventListener("click", startGame);
+  document.getElementById("changeNameBtn").addEventListener("click", function () {
+    endOverlay.hidden = true;
+    state = "ready";
+    renderCard(startCardList, startCard, 5);
+    startOverlay.hidden = false;
+    try { nameInput.focus(); nameInput.select(); } catch (e) {}
+  });
+  // Enter inside the name box starts the run right away
+  nameInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); startGame(); }
+  });
   // Full screen: fill the whole phone screen with the stage and try to
   // lock landscape (the game is wide). Failures are fine — the button
   // simply does its best on whatever browser allows it.
@@ -1281,5 +1404,12 @@
 
   /* ================= Boot ================= */
   reset();
+  // Remember the last player's name and show the scorecard on the
+  // start screen, so the competition is visible before the run.
+  try {
+    var savedName = window.localStorage.getItem("inbaPlayerName");
+    if (savedName) nameInput.value = savedName;
+  } catch (e) {}
+  renderCard(startCardList, startCard, 5);
   requestAnimationFrame(loop);
 })();
