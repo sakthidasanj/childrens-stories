@@ -8,15 +8,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
   body {
     font-family: "Nunito", system-ui, sans-serif;
     background: linear-gradient(180deg, #aee3ff 0%, #d8f3ff 55%, #fff7d6 100%);
     min-height: 100vh;
+    min-height: 100dvh;
     color: #33396b;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 14px 10px 30px;
+    padding: 10px 8px 12px;
     -webkit-tap-highlight-color: transparent;
   }
   .topbar {
@@ -82,6 +84,8 @@
     position: relative;
     width: 100%;
     max-width: 980px;
+    flex: 1 1 auto;
+    min-height: 0;
     border-radius: 22px;
     overflow: hidden;
     border: 5px solid #14467f;
@@ -89,7 +93,31 @@
     background: #aee3ff;
     touch-action: manipulation;
   }
-  canvas { display: block; width: 100%; height: auto; }
+  /* The stage fills all leftover screen height; the canvas bitmap keeps
+     its 16:9 shape (object-fit: contain) and grows as large as the
+     screen allows, in portrait AND landscape, instead of being sized
+     by width alone. */
+  canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .stage:fullscreen { border: none; border-radius: 0; max-width: none; }
+  .rotate-tip {
+    display: none;
+    margin-top: 8px;
+    font-weight: 800;
+    color: #c1272d;
+    font-size: 0.95rem;
+    text-align: center;
+  }
+  @media (orientation: portrait) and (max-width: 860px) {
+    .rotate-tip { display: block; }
+  }
+  @media (max-width: 640px) {
+    h1.game-title { font-size: 1.15rem; }
+    .back-btn { font-size: 0.9rem; padding: 7px 13px; }
+    .hud { gap: 6px; margin: 8px 0; }
+    .hud-chip { font-size: 0.92rem; padding: 4px 12px; }
+    .icon-btn { font-size: 0.9rem; padding: 4px 11px; }
+    .hint { font-size: 0.85rem; margin-top: 8px; }
+  }
   .overlay {
     position: absolute;
     inset: 0;
@@ -163,6 +191,7 @@
   <span class="hud-spacer"></span>
   <button class="icon-btn" id="soundBtn" type="button">🔊 Sound: On</button>
   <button class="icon-btn" id="restartBtn" type="button">↻ Restart</button>
+  <button class="icon-btn" id="fullBtn" type="button">⛶ Full screen</button>
 </div>
 
 <div class="stage" id="stage">
@@ -178,6 +207,8 @@
     <button class="play-btn" id="playBtn" type="button">▶ Play</button>
   </div>
 </div>
+
+<p class="rotate-tip">📱↻ Tip: turn your phone sideways — or tap ⛶ Full screen — for a much bigger game!</p>
 
 <p class="hint"><kbd>Space</kbd> / <kbd>↑</kbd> / tap = jump, again in the air = double-jump &nbsp;·&nbsp; 🎵 “Inba Super Girl Paattu” plays very softly while you run</p>
 

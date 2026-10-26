@@ -23,6 +23,9 @@ original stories and read them one by one.
   deer, pine, leafy and palm trees, rabbits and birds — where the
   forest men cheer "Inba akka vaazhga!" from between the trees.
   All background colours are kept pale so the gameplay stands out.
+  The game page fills the whole phone screen (the play area grows
+  as large as the screen allows), with a ⛶ Full screen button
+  that also turns the game sideways on phones.
   Snappy jumps and a cape double-jump. There are no lives or hearts —
   the run is endless, and a fox catch just tells Inba to be careful —
   in Sakthidasan's own recorded voice, one of his 9 "be careful!"

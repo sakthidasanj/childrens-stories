@@ -1244,6 +1244,27 @@
   });
   document.getElementById("playBtn").addEventListener("click", startGame);
   document.getElementById("restartBtn").addEventListener("click", startGame);
+  // Full screen: fill the whole phone screen with the stage and try to
+  // lock landscape (the game is wide). Failures are fine — the button
+  // simply does its best on whatever browser allows it.
+  var fullBtn = document.getElementById("fullBtn");
+  if (fullBtn) {
+    fullBtn.addEventListener("click", function () {
+      var stageEl = document.getElementById("stage");
+      try {
+        if (document.fullscreenElement) { document.exitFullscreen(); return; }
+        var p = stageEl.requestFullscreen ? stageEl.requestFullscreen({ navigationUI: "hide" }) : null;
+        if (p && p.catch) p.catch(function () { stageEl.requestFullscreen(); });
+        if (screen.orientation && screen.orientation.lock) {
+          var lp = screen.orientation.lock("landscape");
+          if (lp && lp.catch) lp.catch(function () {});
+        }
+      } catch (err) { /* fullscreen not available — layout already fills the screen */ }
+    });
+    document.addEventListener("fullscreenchange", function () {
+      fullBtn.textContent = document.fullscreenElement ? "✕ Exit full" : "⛶ Full screen";
+    });
+  }
   soundBtn.addEventListener("click", function () {
     soundOn = !soundOn;
     soundBtn.textContent = soundOn ? "🔊 Sound: On" : "🔇 Sound: Off";

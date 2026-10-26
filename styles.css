@@ -313,5 +313,6 @@ main { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; paddin
 }
 .game-frame-wrap iframe {
   display: block; width: 100%; height: clamp(430px, 74vh, 740px); border: 0;
+  height: clamp(430px, 82dvh, 760px);
 }
 .game-tab-open { margin-top: 14px; }
