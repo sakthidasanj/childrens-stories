@@ -289,7 +289,7 @@
   }
 
   function reset() {
-    inba = { x: 130, y: GROUND, vy: 0, grounded: true, runPhase: 0, invincible: 0, jumps: 0, jumpBuffer: 0, capeLift: 0, capeFlare: 0 };
+    inba = { x: 130, y: GROUND, vy: 0, grounded: true, runPhase: 0, invincible: 0, jumps: 0, jumpBuffer: 0, capeLift: 0, capeFlare: 0, poseAir: 0 };
     obstacles = [];
     freedKittens = [];
     floaters = [];
@@ -507,6 +507,12 @@
     var capeTarget = inba.grounded ? 0 : 1;
     var capeRate = inba.grounded ? 0.06 : 0.14;
     inba.capeLift += (capeTarget - inba.capeLift) * Math.min(1, capeRate * dt);
+    // Body-pose air blend: same idea as the cape but much snappier, so
+    // the jump pose (tucked knees, reaching arm) is fully on within a
+    // few frames of leaving the ground and releases quickly on landing.
+    var poseTarget = inba.grounded ? 0 : 1;
+    var poseRate = inba.grounded ? 0.22 : 0.3;
+    inba.poseAir += (poseTarget - inba.poseAir) * Math.min(1, poseRate * dt);
     if (inba.capeFlare > 0) inba.capeFlare = Math.max(0, inba.capeFlare - dt);
     inba.runPhase += dt * (inba.grounded ? 0.32 : 0.08);
     if (inba.invincible > 0) inba.invincible -= dt;
@@ -1305,7 +1311,7 @@
     ctx.save();
     ctx.translate(x, feet);
     var ph = inba.runPhase;
-    var liftA = inba.capeLift || 0; // eases 0 (ground) -> 1 (air): blends run pose into jump pose
+    var liftA = inba.poseAir || 0; // snappy 0 (ground) -> 1 (air): blends run pose into jump pose
     var bounce = inba.grounded ? Math.abs(Math.sin(ph)) * 2.4 : 0;
     ctx.translate(0, -bounce);
     ctx.lineCap = "round";
@@ -1316,19 +1322,19 @@
     // up. The planted leg stays nearly straight, like real running.
     function runLeg(hipX, p) {
       var sw = Math.sin(p), liftP = Math.max(0, Math.cos(p));
-      var footX = hipX + sw * 13;
-      var footY = -2 - liftP * 7;
+      var footX = hipX + sw * 14;
+      var footY = -2 - liftP * 9.5;
       var bend = 0.15 + liftP * 0.85;
       return [footX, footY,
-        (hipX + footX) / 2 + bend * 6.5,
-        (-34 + footY) / 2 - bend * 2.5 - 1];
+        (hipX + footX) / 2 + bend * 9.5,
+        (-34 + footY) / 2 - bend * 3.5 - 1];
     }
     // JUMP POSE — rising: front knee tucked high, back leg trailing;
     // falling: both legs reach down, ready to land. airT: 0 rise -> 1 fall.
     var airT = Math.max(0, Math.min(1, (inba.vy + 12) / 24));
     function jumpLeg(front) {
-      var rise = front ? [30, -18, 34, -30] : [8, -10, 16, -22];
-      var fall = front ? [30, -6, 30, -20] : [14, -4, 20, -18];
+      var rise = front ? [31, -20, 35, -31] : [6, -12, 15, -24];
+      var fall = front ? [31, -5, 31, -21] : [14, -4, 20, -18];
       var o = [];
       for (var q = 0; q < 4; q++) o.push(rise[q] + (fall[q] - rise[q]) * airT);
       return o;
@@ -1348,8 +1354,8 @@
     // running). In the air the pose blends to: front arm reaching up,
     // back arm trailing down, with a soft flutter.
     function drawArm(sx, sy, s, front, col) {
-      var ex = sx + s * 2.5, ey = sy + 11 - Math.abs(s) * 1.5;
-      var hx = ex + 2 + s * 6, hy = ey + 3 - Math.max(0, s) * 4;
+      var ex = sx + s * 3.5, ey = sy + 11 - Math.abs(s) * 1.5;
+      var hx = ex + 2 + s * 8.5, hy = ey + 2 - Math.max(0, s) * 5.5 + Math.min(0, s) * 2;
       if (liftA > 0) {
         var ax = front ? 34 : 13, ay = front ? -58 : -56;
         var ahx = front ? 41 : 5, ahy = front ? -73 : -45;
