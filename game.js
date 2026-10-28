@@ -594,15 +594,44 @@
     ctx.closePath();
   }
 
-  /* ============ Forest background (all MUTED / low contrast, so the
-     gameplay characters stay bright and easy to see) ============ */
+  /* ============ Forest background — a modern oil-painting treatment:
+     deep teal, olive and umber layers are broken with warm ochre and
+     coral brush strokes, while Inba and the animals keep the cleanest,
+     brightest colours so gameplay stays easy to read. ============ */
   function bgRand(seed) {
     var x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
     return x - Math.floor(x);
   }
+  // One visible "brush stroke": a soft, slightly tilted oval dab.
+  function paintStroke(x, y, len, thick, color, alpha, tilt) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(x, y);
+    ctx.rotate(tilt || 0);
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.ellipse(0, 0, len / 2, thick / 2, 0, 0, 6.29); ctx.fill();
+    ctx.restore();
+  }
+  // A cluster of broken-colour dabs, used for painted foliage and earth.
+  function paintDabs(cx, cy, rx, ry, seed, colors, count, alpha) {
+    for (var i = 0; i < count; i++) {
+      var ang = bgRand(seed + i * 3.17) * 6.29;
+      var dist = Math.sqrt(bgRand(seed + i * 4.31 + 9));
+      paintStroke(
+        cx + Math.cos(ang) * rx * dist,
+        cy + Math.sin(ang) * ry * dist,
+        8 + bgRand(seed + i * 5.13 + 21) * 19,
+        3 + bgRand(seed + i * 6.29 + 33) * 5,
+        colors[i % colors.length],
+        alpha * (0.62 + bgRand(seed + i * 7.07 + 45) * 0.38),
+        (bgRand(seed + i * 8.41 + 57) - 0.5) * 0.55
+      );
+    }
+  }
   function drawPine(x, baseY, h, col) {
-    ctx.fillStyle = "rgba(122,96,74,0.75)";
+    ctx.fillStyle = "rgba(91,58,35,0.88)";
     ctx.fillRect(x - h * 0.045, baseY - h * 0.18, h * 0.09, h * 0.18);
+    paintStroke(x - h * 0.01, baseY - h * 0.1, h * 0.055, h * 0.14, "#c08345", 0.34, 0.08);
     ctx.fillStyle = col;
     for (var t = 0; t < 3; t++) {
       var wTier = h * (0.62 - t * 0.15), yTier = baseY - h * 0.12 - t * h * 0.26;
@@ -611,10 +640,13 @@
       ctx.lineTo(x, yTier - h * 0.34);
       ctx.lineTo(x + wTier / 2, yTier);
       ctx.closePath(); ctx.fill();
+      // Broken warm light along one side of each tier, like a loaded brush.
+      paintStroke(x - wTier * 0.18, yTier - h * 0.13, wTier * 0.34, h * 0.035,
+        t % 2 ? "#d2ad58" : "#7fa06a", 0.30, -0.48);
     }
   }
   function drawLeafyTree(x, baseY, h, col, col2) {
-    ctx.strokeStyle = "rgba(122,96,74,0.8)";
+    ctx.strokeStyle = "rgba(91,58,35,0.9)";
     ctx.lineWidth = h * 0.07; ctx.lineCap = "round";
     ctx.beginPath(); ctx.moveTo(x, baseY); ctx.quadraticCurveTo(x + h * 0.05, baseY - h * 0.4, x, baseY - h * 0.58); ctx.stroke();
     ctx.fillStyle = col;
@@ -624,11 +656,15 @@
     ctx.fillStyle = col2;
     ctx.beginPath(); ctx.arc(x - h * 0.1, baseY - h * 0.8, h * 0.16, 0, 6.29); ctx.fill();
     ctx.beginPath(); ctx.arc(x + h * 0.14, baseY - h * 0.68, h * 0.13, 0, 6.29); ctx.fill();
+    // Impressionist broken colour over the canopy: moss, gold and teal.
+    paintDabs(x, baseY - h * 0.69, h * 0.29, h * 0.22, 17.3,
+      ["#d2ad58", "#315f4b", "#88a04f", "#477b6d"], 13, 0.42);
   }
   function drawPalmTree(x, baseY, h, col) {
-    ctx.strokeStyle = "rgba(130,104,78,0.8)";
+    ctx.strokeStyle = "rgba(105,67,38,0.9)";
     ctx.lineWidth = h * 0.06; ctx.lineCap = "round";
     ctx.beginPath(); ctx.moveTo(x, baseY); ctx.quadraticCurveTo(x + h * 0.1, baseY - h * 0.55, x + h * 0.24, baseY - h * 0.92); ctx.stroke();
+    paintStroke(x + h * 0.08, baseY - h * 0.48, h * 0.035, h * 0.36, "#d09a55", 0.26, -0.18);
     var tx = x + h * 0.24, ty = baseY - h * 0.92;
     ctx.strokeStyle = col; ctx.lineWidth = h * 0.045;
     for (var f = 0; f < 5; f++) {
@@ -687,45 +723,72 @@
     ctx.save();
     ctx.font = "700 15px Fredoka, sans-serif";
     var wText = ctx.measureText(text).width + 22;
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    rr(x - wText / 2, y - 34, wText, 27, 12); ctx.fill();
+    ctx.fillStyle = "rgba(255,243,214,0.96)";
+    rr(x - wText / 2, y - 34, wText, 27, 9); ctx.fill();
+    ctx.strokeStyle = "rgba(151,94,35,0.72)"; ctx.lineWidth = 1.5;
+    rr(x - wText / 2, y - 34, wText, 27, 9); ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(x - 5, y - 8); ctx.lineTo(x + 7, y - 8); ctx.lineTo(x + 1, y + 2); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = "#7a4a21";
+    ctx.fillStyle = "#713f1d";
     ctx.textAlign = "center";
     ctx.fillText(text, x, y - 15);
     ctx.restore();
   }
 
   function drawBackground() {
-    // Pale hazy sky — deliberately washed out
+    // Oil-painted dawn sky: petrol blue melts through sage into ochre.
     var sky = ctx.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0, "#bfd9e8");
-    sky.addColorStop(0.65, "#dfead9");
-    sky.addColorStop(1, "#f2ecd7");
+    sky.addColorStop(0, "#2e5d70");
+    sky.addColorStop(0.34, "#69908c");
+    sky.addColorStop(0.68, "#a9ad7c");
+    sky.addColorStop(1, "#e3b96d");
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, W, H);
 
-    // Pale sun
-    ctx.fillStyle = "rgba(245,226,154,0.75)";
-    ctx.beginPath(); ctx.arc(862, 74, 34, 0, 6.29); ctx.fill();
-    ctx.fillStyle = "rgba(250,238,178,0.8)";
-    ctx.beginPath(); ctx.arc(862, 74, 26, 0, 6.29); ctx.fill();
+    // Broad horizontal brushwork across the sky, drifting very slowly.
+    var skScroll = frame * speed * 0.05, skTile = 360, skOff = -(skScroll % skTile), skBase = Math.floor(skScroll / skTile);
+    for (var ski = -1; ski < W / skTile + 2; ski++) {
+      var skt = skBase + ski, skx = skOff + ski * skTile;
+      paintStroke(skx + 55 + bgRand(skt * 13 + 1) * 180, 42 + bgRand(skt * 13 + 2) * 90,
+        95 + bgRand(skt * 13 + 3) * 95, 7 + bgRand(skt * 13 + 4) * 8,
+        bgRand(skt * 13 + 5) > 0.5 ? "#f0c978" : "#376b78", 0.13, -0.04);
+      paintStroke(skx + 185 + bgRand(skt * 13 + 6) * 120, 128 + bgRand(skt * 13 + 7) * 86,
+        75 + bgRand(skt * 13 + 8) * 85, 6 + bgRand(skt * 13 + 9) * 7,
+        bgRand(skt * 13 + 10) > 0.45 ? "#829d82" : "#d99a5b", 0.11, 0.03);
+    }
 
-    // Clouds (slow parallax), softer
-    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    // Painted sun: layered ochre glazes rather than a flat disc.
+    ctx.fillStyle = "rgba(224,164,62,0.20)";
+    ctx.beginPath(); ctx.arc(862, 74, 57, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "rgba(240,185,82,0.46)";
+    ctx.beginPath(); ctx.arc(862, 74, 41, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#f4c65f";
+    ctx.beginPath(); ctx.arc(862, 74, 29, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#ffe5a3";
+    ctx.beginPath(); ctx.arc(858, 70, 20, 0, 6.29); ctx.fill();
+    paintStroke(862, 91, 48, 6, "#d98243", 0.30, 0.03);
+
+    // Clouds in three glazes: slate shadow, warm ivory and peach light.
     var ci, cx;
     for (ci = 0; ci < 5; ci++) {
       cx = ((ci * 230 + 60 - frame * 0.35) % (W + 240) + (W + 240)) % (W + 240) - 120;
       var cy = 46 + (ci % 3) * 34;
+      ctx.fillStyle = "rgba(65,91,105,0.32)";
+      ctx.beginPath();
+      ctx.arc(cx, cy + 7, 22, 0, 6.29);
+      ctx.arc(cx + 24, cy + 11, 17, 0, 6.29);
+      ctx.arc(cx - 25, cy + 12, 15, 0, 6.29);
+      ctx.fill();
+      ctx.fillStyle = "rgba(248,235,203,0.80)";
       ctx.beginPath();
       ctx.arc(cx, cy, 22, 0, 6.29);
       ctx.arc(cx + 24, cy + 4, 17, 0, 6.29);
       ctx.arc(cx - 25, cy + 5, 15, 0, 6.29);
       ctx.fill();
+      paintStroke(cx + 4, cy - 8, 48, 8, "#eeb26d", 0.28, -0.05);
     }
-    // Birds — little muted "m" shapes drifting by
-    ctx.strokeStyle = "rgba(90,110,125,0.55)"; ctx.lineWidth = 2; ctx.lineCap = "round";
+    // Birds — little ink-dark "m" shapes drifting by
+    ctx.strokeStyle = "rgba(30,48,55,0.62)"; ctx.lineWidth = 2; ctx.lineCap = "round";
     for (var bi = 0; bi < 3; bi++) {
       var bx = ((bi * 340 + 140 - frame * 0.55) % (W + 160) + (W + 160)) % (W + 160) - 80;
       var by = 60 + bi * 26 + Math.sin(frame * 0.05 + bi * 2) * 4, flap = Math.sin(frame * 0.3 + bi) * 3;
@@ -740,10 +803,12 @@
     for (var mi = -1; mi < W / mTile + 2; mi++) {
       var mt = mBase + mi, mx = mOff + mi * mTile;
       var h1 = 120 + bgRand(mt * 3 + 1) * 70, w1 = 300 + bgRand(mt * 3 + 2) * 80;
-      ctx.fillStyle = "rgba(150,175,198,0.55)";
+      ctx.fillStyle = "rgba(52,76,99,0.74)";
       ctx.beginPath();
       ctx.moveTo(mx, GROUND - 40); ctx.lineTo(mx + w1 / 2, GROUND - 40 - h1); ctx.lineTo(mx + w1, GROUND - 40); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      paintStroke(mx + w1 * 0.34, GROUND - 58 - h1 * 0.34, w1 * 0.25, 8, "#71808a", 0.26, -0.72);
+      paintStroke(mx + w1 * 0.63, GROUND - 54 - h1 * 0.29, w1 * 0.22, 7, "#3d5d68", 0.32, 0.68);
+      ctx.fillStyle = "rgba(255,239,196,0.62)";
       ctx.beginPath();
       ctx.moveTo(mx + w1 / 2 - w1 * 0.11, GROUND - 40 - h1 + h1 * 0.22);
       ctx.lineTo(mx + w1 / 2, GROUND - 40 - h1);
@@ -751,36 +816,35 @@
       ctx.lineTo(mx + w1 / 2, GROUND - 40 - h1 + h1 * 0.13);
       ctx.closePath(); ctx.fill();
       var h2 = 80 + bgRand(mt * 5 + 3) * 50;
-      ctx.fillStyle = "rgba(140,168,150,0.5)";
+      ctx.fillStyle = "rgba(58,91,76,0.66)";
       ctx.beginPath();
       ctx.moveTo(mx + w1 * 0.45, GROUND - 40); ctx.lineTo(mx + w1 * 0.45 + 130, GROUND - 40 - h2); ctx.lineTo(mx + w1 * 0.45 + 260, GROUND - 40); ctx.closePath(); ctx.fill();
     }
 
-    // LAKE — a calm muted band in the middle distance, slow scroll
+    // LAKE — deep painted teal with broken gold reflections
     var lScroll = frame * speed * 0.12, lTile = 1500, lOff = -(lScroll % lTile);
     for (var li = -1; li < 2; li++) {
       var lx = lOff + li * lTile + 240;
-      ctx.fillStyle = "rgba(164,200,214,0.75)";
+      ctx.fillStyle = "rgba(31,82,91,0.84)";
       ctx.beginPath(); ctx.ellipse(lx + 260, GROUND - 26, 300, 26, 0, 0, 6.29); ctx.fill();
-      ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.lineWidth = 2;
-      for (var lw = 0; lw < 4; lw++) {
+      ctx.fillStyle = "rgba(91,139,130,0.50)";
+      ctx.beginPath(); ctx.ellipse(lx + 250, GROUND - 29, 245, 17, 0, 0, 6.29); ctx.fill();
+      for (var lw = 0; lw < 5; lw++) {
         var shimmer = Math.sin(frame * 0.04 + lw * 1.7) * 6;
-        ctx.beginPath();
-        ctx.moveTo(lx + 90 + lw * 95 + shimmer, GROUND - 32 + lw * 5);
-        ctx.lineTo(lx + 140 + lw * 95 + shimmer, GROUND - 32 + lw * 5);
-        ctx.stroke();
+        paintStroke(lx + 112 + lw * 82 + shimmer, GROUND - 36 + lw * 5,
+          38 + (lw % 3) * 13, 3.2, lw % 2 ? "#f2cd78" : "#dce8d2", 0.42, 0.01);
       }
       // a deer drinking at the lake edge
-      drawDeer(lx + 60, GROUND - 18, 0.9, "rgba(166,124,82,0.8)");
+      drawDeer(lx + 60, GROUND - 18, 0.9, "rgba(146,92,50,0.90)");
     }
 
     // FAR TREE LINE — soft green shapes, gentle parallax
     var fScroll = frame * speed * 0.2, fTile = 460, fOff = -(fScroll % fTile), fBase = Math.floor(fScroll / fTile);
     for (var fi = -1; fi < W / fTile + 2; fi++) {
       var ft = fBase + fi, fx0 = fOff + fi * fTile;
-      drawPine(fx0 + 60 + bgRand(ft * 7 + 1) * 60, GROUND - 30, 120 + bgRand(ft * 7 + 2) * 40, "rgba(148,178,138,0.65)");
-      drawLeafyTree(fx0 + 230 + bgRand(ft * 7 + 3) * 60, GROUND - 30, 105 + bgRand(ft * 7 + 4) * 35, "rgba(154,184,142,0.65)", "rgba(170,198,158,0.65)");
-      drawPine(fx0 + 380 + bgRand(ft * 7 + 5) * 50, GROUND - 30, 135 + bgRand(ft * 7 + 6) * 40, "rgba(143,172,132,0.65)");
+      drawPine(fx0 + 60 + bgRand(ft * 7 + 1) * 60, GROUND - 30, 120 + bgRand(ft * 7 + 2) * 40, "rgba(70,103,83,0.74)");
+      drawLeafyTree(fx0 + 230 + bgRand(ft * 7 + 3) * 60, GROUND - 30, 105 + bgRand(ft * 7 + 4) * 35, "rgba(91,116,79,0.74)", "rgba(172,164,91,0.68)");
+      drawPine(fx0 + 380 + bgRand(ft * 7 + 5) * 50, GROUND - 30, 135 + bgRand(ft * 7 + 6) * 40, "rgba(61,96,78,0.74)");
     }
 
     // NEAR FOREST — bigger trees (pine, leafy, palm), rabbits, and the
@@ -788,24 +852,24 @@
     var nScroll = frame * speed * 0.45, nTile = 780, nOff = -(nScroll % nTile), nBase = Math.floor(nScroll / nTile);
     for (var ni = -1; ni < W / nTile + 2; ni++) {
       var nt = nBase + ni, nx = nOff + ni * nTile;
-      drawPalmTree(nx + 90 + bgRand(nt * 11 + 1) * 50, GROUND - 6, 150 + bgRand(nt * 11 + 2) * 40, "rgba(110,152,102,0.8)");
-      drawLeafyTree(nx + 330 + bgRand(nt * 11 + 3) * 60, GROUND - 6, 165 + bgRand(nt * 11 + 4) * 45, "rgba(116,160,106,0.82)", "rgba(138,178,124,0.82)");
-      drawPine(nx + 560 + bgRand(nt * 11 + 5) * 60, GROUND - 6, 185 + bgRand(nt * 11 + 6) * 50, "rgba(108,152,100,0.82)");
+      drawPalmTree(nx + 90 + bgRand(nt * 11 + 1) * 50, GROUND - 6, 150 + bgRand(nt * 11 + 2) * 40, "rgba(69,104,61,0.92)");
+      drawLeafyTree(nx + 330 + bgRand(nt * 11 + 3) * 60, GROUND - 6, 165 + bgRand(nt * 11 + 4) * 45, "rgba(48,91,58,0.92)", "rgba(139,148,76,0.90)");
+      drawPine(nx + 560 + bgRand(nt * 11 + 5) * 60, GROUND - 6, 185 + bgRand(nt * 11 + 6) * 50, "rgba(35,80,59,0.94)");
       // a rabbit near the leafy tree, hopping softly
       var hop = Math.abs(Math.sin(frame * 0.09 + nt)) * 4;
-      drawRabbit(nx + 265 + bgRand(nt * 11 + 7) * 30, GROUND - 4, 0.95, "rgba(168,158,148,0.85)", hop);
+      drawRabbit(nx + 265 + bgRand(nt * 11 + 7) * 30, GROUND - 4, 0.95, "rgba(174,151,126,0.92)", hop);
       // a forest man between the trees — he cheers in turns: his arms
       // go up and his shout bubble appears for a stretch each cycle
       var manX = nx + 665, shoutPhase = (frame + nt * 137) % 560;
       var cheering = shoutPhase < 170;
-      drawForestMan(manX, GROUND - 4, ["#b0714f", "#7d8c5c", "#97785a"][Math.abs(nt) % 3], cheering);
+      drawForestMan(manX, GROUND - 4, ["#b6512f", "#276f6a", "#bd8136"][Math.abs(nt) % 3], cheering);
       if (cheering && manX > 40 && manX < W - 40) {
         drawShoutBubble(manX, GROUND - 66, "Inba akka vaazhga!");
       }
     }
 
-    // Soft green hills right behind the track
-    ctx.fillStyle = "rgba(168,198,148,0.55)";
+    // Olive-gold hills rolling right behind the track
+    ctx.fillStyle = "rgba(119,132,70,0.54)";
     var hx = -((frame * speed * 0.25) % 480);
     for (var hxi = hx; hxi < W + 480; hxi += 480) {
       ctx.beginPath();
@@ -813,13 +877,36 @@
       ctx.fill();
     }
 
-    // Ground — muted grass so Inba and the animals pop against it
-    ctx.fillStyle = "#93bd76";
+    // Ground — deep olive earth with a warm painted running edge.
+    var groundGrad = ctx.createLinearGradient(0, GROUND, 0, H);
+    groundGrad.addColorStop(0, "#718044");
+    groundGrad.addColorStop(0.28, "#5d703a");
+    groundGrad.addColorStop(1, "#37492c");
+    ctx.fillStyle = groundGrad;
     ctx.fillRect(0, GROUND, W, H - GROUND);
-    ctx.fillStyle = "#83ac66";
-    ctx.fillRect(0, GROUND, W, 8);
-    // Grass tufts scrolling
-    ctx.strokeStyle = "rgba(96,142,72,0.8)";
+    ctx.fillStyle = "#c39a4e";
+    ctx.fillRect(0, GROUND, W, 4);
+    ctx.fillStyle = "#879c48";
+    ctx.fillRect(0, GROUND + 4, W, 6);
+
+    // Broken strokes of moss, ochre, umber and teal across the earth.
+    var gScroll = frame * speed, gTile = 190, gOff = -(gScroll % gTile), gBase = Math.floor(gScroll / gTile);
+    var groundColors = ["#82954b", "#a98b45", "#466b4c", "#77663a", "#315f52"];
+    for (var gi = -1; gi < W / gTile + 2; gi++) {
+      var gt = gBase + gi, gx0 = gOff + gi * gTile;
+      for (var gs = 0; gs < 5; gs++) {
+        paintStroke(
+          gx0 + 24 + bgRand(gt * 17 + gs * 3 + 1) * 145,
+          GROUND + 18 + bgRand(gt * 17 + gs * 3 + 2) * 52,
+          24 + bgRand(gt * 17 + gs * 3 + 3) * 38,
+          3.5 + bgRand(gt * 17 + gs * 5 + 4) * 3.5,
+          groundColors[(Math.abs(gt + gs) % groundColors.length)],
+          0.22, (bgRand(gt * 19 + gs) - 0.5) * 0.12
+        );
+      }
+    }
+    // Grass tufts scrolling — darker ink-green against the earth
+    ctx.strokeStyle = "rgba(31,61,35,0.78)";
     ctx.lineWidth = 2.5;
     var off = (frame * speed) % 52;
     for (var gx = -off; gx < W + 52; gx += 52) {
@@ -830,15 +917,22 @@
       ctx.lineTo(gx + 13, GROUND + 4);
       ctx.stroke();
     }
-    // Little flowers — paler now
+    // Painted wildflowers: coral, gold and violet dabs
     var foff = (frame * speed) % 170;
-    ctx.fillStyle = "rgba(240,168,186,0.8)";
-    for (var fx2 = -foff + 40; fx2 < W + 170; fx2 += 170) {
+    var flowerCols = ["rgba(224,112,76,0.88)", "rgba(240,195,92,0.9)", "rgba(151,119,178,0.82)"];
+    for (var fx2 = -foff + 40, fi2 = 0; fx2 < W + 170; fx2 += 170, fi2++) {
+      ctx.fillStyle = flowerCols[fi2 % 3];
       ctx.beginPath(); ctx.arc(fx2, GROUND + 34, 4, 0, 6.29); ctx.fill();
-      ctx.fillStyle = "rgba(240,205,120,0.8)";
+      ctx.fillStyle = flowerCols[(fi2 + 1) % 3];
       ctx.beginPath(); ctx.arc(fx2 + 26, GROUND + 52, 4, 0, 6.29); ctx.fill();
-      ctx.fillStyle = "rgba(240,168,186,0.8)";
     }
+
+    // Varnish: a gentle vignette concentrates the scene like a canvas.
+    var vignette = ctx.createRadialGradient(W / 2, H / 2, H * 0.34, W / 2, H / 2, W * 0.72);
+    vignette.addColorStop(0, "rgba(20,25,16,0)");
+    vignette.addColorStop(1, "rgba(20,25,16,0.20)");
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, W, H);
   }
 
   // Fur shading per kitten: main, shadow, stripe and belly tones.
@@ -978,7 +1072,7 @@
       drawKitten(x + w / 2 + 8, GROUND - 2, ob.kitten, 0, false);
     }
     // cage frame
-    ctx.strokeStyle = "#7a7f8a";
+    ctx.strokeStyle = "#5d5546";
     ctx.lineWidth = 5;
     rr(x, top + 14, w, h - 14, 8);
     ctx.stroke();
@@ -986,10 +1080,10 @@
     ctx.beginPath();
     ctx.arc(x + w / 2, top + 16, w / 2, Math.PI, 0);
     ctx.stroke();
-    ctx.fillStyle = "#ffd166";
+    ctx.fillStyle = "#c9973f";
     ctx.beginPath(); ctx.arc(x + w / 2, top - 2, 6, 0, 6.29); ctx.fill();
     // bars (back set)
-    ctx.strokeStyle = "#9aa0ab";
+    ctx.strokeStyle = "#8d8271";
     ctx.lineWidth = 4;
     for (var bx = x + 12; bx < x + w - 4; bx += 13) {
       ctx.beginPath(); ctx.moveTo(bx, top + 18); ctx.lineTo(bx, GROUND - 3); ctx.stroke();
@@ -999,7 +1093,7 @@
     var dAlpha = 1 - ob.door * 0.75;
     ctx.save();
     ctx.globalAlpha = dAlpha;
-    ctx.strokeStyle = "#5f646e";
+    ctx.strokeStyle = "#4c463a";
     ctx.lineWidth = 4.5;
     for (var dx = x + 7 - dOff; dx < x + w - 22 - dOff + 26; dx += 13) {
       if (dx > x + 2 && dx < x + w - 3) {
@@ -1008,7 +1102,7 @@
     }
     ctx.restore();
     // base
-    ctx.fillStyle = "#8a6d4a";
+    ctx.fillStyle = "#6d4c2c";
     rr(x - 4, GROUND - 6, w + 8, 9, 4);
     ctx.fill();
   }
@@ -1028,13 +1122,13 @@
     var run2 = ob.gait === "gallop" ? Math.sin(ob.phase) * stride * 0.85 : Math.sin(ob.phase + Math.PI) * stride;
     var tailWag = Math.sin(ob.phase * 0.7) * 3;
     // ground shadow
-    ctx.fillStyle = "rgba(60,90,40,0.25)";
+    ctx.fillStyle = "rgba(28,42,24,0.32)";
     ctx.beginPath(); ctx.ellipse(2, 2, 36, 5, 0, 0, 6.29); ctx.fill();
     // bushy tail (behind, on the right — fox faces left): layered fur
     // with a dark base band and a cream tip
-    ctx.fillStyle = "#c96a12";
+    ctx.fillStyle = "#b85a10";
     ctx.beginPath(); ctx.ellipse(36, -31 + tailWag, 22, 12, -0.5, 0, 6.29); ctx.fill();
-    ctx.fillStyle = "#e8821e";
+    ctx.fillStyle = "#cf7118";
     ctx.beginPath(); ctx.ellipse(35, -33 + tailWag, 20, 10.5, -0.5, 0, 6.29); ctx.fill();
     ctx.fillStyle = "#fff3e0";
     ctx.beginPath();
@@ -1044,7 +1138,7 @@
     ctx.quadraticCurveTo(48, -33 + tailWag, 44, -42 + tailWag);
     ctx.fill();
     // far legs (darker, opposite phase) with dark "sock" paws
-    ctx.strokeStyle = "#b35c0d";
+    ctx.strokeStyle = "#9c4f0e";
     ctx.lineWidth = 6;
     ctx.lineCap = "round";
     ctx.beginPath();
@@ -1056,9 +1150,9 @@
     ctx.beginPath(); ctx.ellipse(16 + run, -2, 5, 3, 0, 0, 6.29); ctx.fill();
     // body — russet gradient, darker saddle on the back, cream belly
     var bodyGrad = ctx.createLinearGradient(0, -48, 0, -8);
-    bodyGrad.addColorStop(0, "#d97a16");
-    bodyGrad.addColorStop(0.45, "#f08c1e");
-    bodyGrad.addColorStop(1, "#f6a83e");
+    bodyGrad.addColorStop(0, "#c4680f");
+    bodyGrad.addColorStop(0.45, "#dd7f1e");
+    bodyGrad.addColorStop(1, "#e89b3c");
     ctx.fillStyle = bodyGrad;
     ctx.beginPath(); ctx.ellipse(2, -28, 31, 17.5, 0, 0, 6.29); ctx.fill();
     ctx.fillStyle = "rgba(255,233,201,0.95)";
@@ -1070,7 +1164,7 @@
     ctx.quadraticCurveTo(-30, -25, -24, -34);
     ctx.fill();
     // near legs
-    ctx.strokeStyle = "#d97a16";
+    ctx.strokeStyle = "#c4680f";
     ctx.lineWidth = 6.5;
     ctx.beginPath();
     ctx.moveTo(-16, -14); ctx.lineTo(-16 + run, -4);
@@ -1080,7 +1174,7 @@
     ctx.beginPath(); ctx.ellipse(-16 + run, -2, 5.5, 3, 0, 0, 6.29); ctx.fill();
     ctx.beginPath(); ctx.ellipse(10 + run2, -2, 5.5, 3, 0, 0, 6.29); ctx.fill();
     // ears first (behind head): tall, pointed, dark-backed, cream inner
-    ctx.fillStyle = "#b35c0d";
+    ctx.fillStyle = "#9c4f0e";
     ctx.beginPath();
     ctx.moveTo(-39, -50); ctx.lineTo(-37, -68); ctx.lineTo(-27, -54); ctx.closePath();
     ctx.moveTo(-25, -53); ctx.lineTo(-16, -66); ctx.lineTo(-11, -49); ctx.closePath();
@@ -1092,9 +1186,9 @@
     ctx.fill();
     // head — russet top fading to cream cheeks, spiky cheek fur
     var headGrad = ctx.createLinearGradient(0, -58, 0, -28);
-    headGrad.addColorStop(0, "#e07f18");
-    headGrad.addColorStop(0.65, "#f08c1e");
-    headGrad.addColorStop(1, "#f9bd6d");
+    headGrad.addColorStop(0, "#c96a12");
+    headGrad.addColorStop(0.65, "#dd7f1e");
+    headGrad.addColorStop(1, "#f2b25e");
     ctx.fillStyle = headGrad;
     ctx.beginPath(); ctx.arc(-27, -42, 15.5, 0, 6.29); ctx.fill();
     ctx.fillStyle = "#ffe9c9";
@@ -1129,7 +1223,7 @@
     ctx.beginPath(); ctx.moveTo(-36, -50.5); ctx.lineTo(-26, -49); ctx.stroke();
     // Neela Nari's blue bandana — wrap, knot and spotted tail-end
     if (ob.kind === "neela") {
-      ctx.fillStyle = "#2b6cb0";
+      ctx.fillStyle = "#177e78";
       ctx.beginPath();
       ctx.moveTo(-23, -33); ctx.lineTo(-5, -29); ctx.lineTo(-8, -21);
       ctx.lineTo(-20, -23); ctx.closePath();
@@ -1138,7 +1232,7 @@
       ctx.beginPath();
       ctx.moveTo(-4, -25); ctx.lineTo(3, -18); ctx.lineTo(-3, -14); ctx.lineTo(-6, -21);
       ctx.closePath(); ctx.fill();
-      ctx.fillStyle = "#bee3f8";
+      ctx.fillStyle = "#d8f3ee";
       ctx.beginPath(); ctx.arc(-15, -27.5, 1.4, 0, 6.29); ctx.fill();
       ctx.beginPath(); ctx.arc(-10, -24.5, 1.2, 0, 6.29); ctx.fill();
     }
@@ -1149,7 +1243,7 @@
     var x = inba.x, feet = inba.y;
     // shadow
     var hgt = Math.min(1, (GROUND - feet) / 150);
-    ctx.fillStyle = "rgba(60,90,40,0.30)";
+    ctx.fillStyle = "rgba(28,42,24,0.36)";
     ctx.beginPath();
     ctx.ellipse(x + 24, GROUND + 8, 30 - hgt * 10, 6, 0, 0, 6.29);
     ctx.fill();
@@ -1194,9 +1288,9 @@
       botPts.push([spineX + 2, spineY + thick]);
     }
     var capeGrad = ctx.createLinearGradient(20, -72, topPts[SEG][0], topPts[SEG][1]);
-    capeGrad.addColorStop(0, "#ef4444");
-    capeGrad.addColorStop(0.55, "#d92b2b");
-    capeGrad.addColorStop(1, "#a31616");
+    capeGrad.addColorStop(0, "#c8443c");
+    capeGrad.addColorStop(0.55, "#a62b2e");
+    capeGrad.addColorStop(1, "#701e26");
     ctx.fillStyle = capeGrad;
     ctx.beginPath();
     ctx.moveTo(topPts[0][0], topPts[0][1]);
@@ -1205,7 +1299,7 @@
     ctx.closePath();
     ctx.fill();
     // Fold lines follow the same ripple, so the cloth looks layered.
-    ctx.strokeStyle = "rgba(120,10,10,0.45)"; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "rgba(74,14,20,0.50)"; ctx.lineWidth = 1.5;
     var foldF;
     for (foldF = 0.33; foldF < 0.9; foldF += 0.28) {
       ctx.beginPath();
@@ -1219,7 +1313,7 @@
     }
     // Bright rim along the flying top edge.
     if (lift > 0.05) {
-      ctx.strokeStyle = "rgba(255,150,150," + (0.55 * lift).toFixed(2) + ")";
+      ctx.strokeStyle = "rgba(255,183,140," + (0.55 * lift).toFixed(2) + ")";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(topPts[0][0], topPts[0][1]);
@@ -1260,8 +1354,8 @@
 
     // dress — purple gradient, soft fold lines, gold waist band
     var dressGrad = ctx.createLinearGradient(5, -72, 40, -30);
-    dressGrad.addColorStop(0, "#8a5fe0");
-    dressGrad.addColorStop(1, "#6840b8");
+    dressGrad.addColorStop(0, "#2f8f83");
+    dressGrad.addColorStop(1, "#175e5a");
     ctx.fillStyle = dressGrad;
     ctx.beginPath();
     ctx.moveTo(12, -70);
@@ -1270,18 +1364,18 @@
     ctx.quadraticCurveTo(22, -26, 4, -31);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = "rgba(60,30,110,0.45)"; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "rgba(9,52,55,0.50)"; ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(18, -58); ctx.quadraticCurveTo(19, -44, 15, -32);
     ctx.moveTo(29, -58); ctx.quadraticCurveTo(30, -44, 32, -32);
     ctx.stroke();
     ctx.fillStyle = "#ffd166";
     ctx.fillRect(5, -38, 35, 5);
-    ctx.fillStyle = "#e8a90c";
+    ctx.fillStyle = "#d9962c";
     ctx.fillRect(5, -34.5, 35, 1.6);
 
     // front arm (sleeve puff, forearm, hand)
-    ctx.fillStyle = "#7b4fd0";
+    ctx.fillStyle = "#20736b";
     ctx.beginPath(); ctx.arc(30, -65, 5.5, 0, 6.29); ctx.fill();
     ctx.strokeStyle = "#b06a34";
     ctx.lineWidth = 6;
@@ -1376,7 +1470,9 @@
     for (i = 0; i < floaters.length; i++) {
       var fl = floaters[i];
       ctx.globalAlpha = Math.min(1, fl.life / 30);
-      ctx.fillStyle = "#14467f";
+      ctx.fillStyle = "rgba(35,32,18,0.88)";
+      ctx.fillText(fl.text, fl.x + 2, fl.y + 2);
+      ctx.fillStyle = "#ffe9a8";
       ctx.fillText(fl.text, fl.x, fl.y);
     }
     ctx.globalAlpha = 1;

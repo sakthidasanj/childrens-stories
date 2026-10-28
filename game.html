@@ -11,10 +11,15 @@
   html, body { height: 100%; }
   body {
     font-family: "Nunito", system-ui, sans-serif;
-    background: linear-gradient(180deg, #aee3ff 0%, #d8f3ff 55%, #fff7d6 100%);
+    /* Modern oil-painting backdrop: deep teal-green shadow, warm ochre
+       light, and a touch of burgundy — like varnished canvas. */
+    background:
+      radial-gradient(ellipse 70% 45% at 82% -8%, rgba(224, 164, 62, .34), transparent 62%),
+      radial-gradient(ellipse 55% 38% at 4% 108%, rgba(127, 45, 54, .30), transparent 65%),
+      linear-gradient(155deg, #102f35 0%, #173f3b 48%, #31584a 76%, #6c5732 100%);
     min-height: 100vh;
     min-height: 100dvh;
-    color: #33396b;
+    color: #fff4d6;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -33,23 +38,25 @@
     font-family: "Fredoka", sans-serif;
     font-weight: 600;
     font-size: 1rem;
-    color: #fff;
-    background: #ff6b9d;
-    border: none;
+    color: #fff8e8;
+    background: linear-gradient(135deg, #c6532f, #93392c);
+    border: 1px solid rgba(255, 214, 145, .55);
     border-radius: 999px;
     padding: 9px 18px;
     cursor: pointer;
     text-decoration: none;
-    box-shadow: 0 4px 0 #d94f7e;
+    box-shadow: 0 5px 16px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255,255,255,.25);
   }
-  .back-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #d94f7e; }
+  .back-btn:active { transform: translateY(2px); box-shadow: 0 2px 8px rgba(0,0,0,.3); }
   h1.game-title {
     font-family: "Fredoka", sans-serif;
     font-size: clamp(1.4rem, 4.5vw, 2.1rem);
     font-weight: 700;
-    color: #14467f;
+    color: #fff3d1;
+    letter-spacing: .01em;
+    text-shadow: 0 3px 14px rgba(0, 0, 0, .42);
   }
-  h1.game-title .accent { color: #c1272d; }
+  h1.game-title .accent { color: #eeb14f; }
   .hud {
     width: 100%;
     max-width: 980px;
@@ -59,26 +66,29 @@
     margin: 12px 0 10px;
   }
   .hud-chip {
-    background: #ffffffcc;
-    border: 3px solid #ffd166;
+    background: linear-gradient(135deg, rgba(18, 49, 51, .88), rgba(35, 72, 61, .82));
+    border: 1.5px solid rgba(238, 177, 79, .72);
     border-radius: 999px;
     padding: 6px 16px;
     font-family: "Fredoka", sans-serif;
     font-weight: 600;
     font-size: 1.05rem;
-    box-shadow: 0 3px 8px #14467f22;
+    color: #fff3d1;
+    box-shadow: 0 5px 14px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255,255,255,.14);
+    backdrop-filter: blur(8px);
   }
   .hud-spacer { flex: 1; }
   .icon-btn {
     font-family: "Fredoka", sans-serif;
     font-weight: 600;
     font-size: 1rem;
-    border: 3px solid #90caf9;
-    background: #ffffffcc;
-    color: #14467f;
+    border: 1.5px solid rgba(155, 203, 190, .62);
+    background: linear-gradient(135deg, rgba(244, 234, 211, .94), rgba(205, 190, 151, .90));
+    color: #173f3b;
     border-radius: 999px;
     padding: 5px 15px;
     cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,.22);
   }
   .stage {
     position: relative;
@@ -86,11 +96,13 @@
     max-width: 980px;
     flex: 1 1 auto;
     min-height: 0;
-    border-radius: 22px;
+    border-radius: 8px;
     overflow: hidden;
-    border: 5px solid #14467f;
-    box-shadow: 0 12px 30px #14467f33;
-    background: #aee3ff;
+    border: 6px solid #8a5b26;
+    outline: 2px solid rgba(246, 199, 102, .62);
+    outline-offset: -11px;
+    box-shadow: 0 22px 55px rgba(0, 0, 0, .48), 0 5px 18px rgba(0,0,0,.34), inset 0 0 0 2px rgba(55, 32, 10, .55);
+    background: #315d6b;
     touch-action: manipulation;
   }
   /* The stage fills all leftover screen height; the canvas bitmap keeps
@@ -103,9 +115,10 @@
     display: none;
     margin-top: 8px;
     font-weight: 800;
-    color: #c1272d;
+    color: #f0b95a;
     font-size: 0.95rem;
     text-align: center;
+    text-shadow: 0 2px 8px rgba(0,0,0,.4);
   }
   @media (orientation: portrait) and (max-width: 860px) {
     .rotate-tip { display: block; }
@@ -127,86 +140,94 @@
     justify-content: center;
     text-align: center;
     gap: 10px;
-    background: #14467f55;
-    backdrop-filter: blur(2px);
+    background:
+      radial-gradient(ellipse 65% 52% at 50% 38%, rgba(226, 169, 73, .16), transparent 68%),
+      linear-gradient(160deg, rgba(10, 37, 42, .78), rgba(37, 55, 43, .68));
+    backdrop-filter: blur(3px) saturate(1.08);
     padding: 16px;
   }
   .overlay[hidden] { display: none; }
   .overlay .big { font-size: clamp(2.2rem, 8vw, 3.6rem); }
   .overlay h2 {
     font-family: "Fredoka", sans-serif;
-    color: #fff;
+    color: #fff3d1;
     font-size: clamp(1.5rem, 5.5vw, 2.4rem);
-    text-shadow: 0 3px 0 #14467f88;
+    text-shadow: 0 3px 12px rgba(0, 0, 0, .55);
   }
   .overlay p {
-    color: #fff;
+    color: #fff8e9;
     font-weight: 700;
     font-size: clamp(0.95rem, 3.4vw, 1.15rem);
     max-width: 560px;
-    text-shadow: 0 2px 4px #14467f99;
+    text-shadow: 0 2px 5px rgba(0, 0, 0, .58);
     line-height: 1.45;
   }
   .play-btn {
     font-family: "Fredoka", sans-serif;
     font-weight: 700;
     font-size: clamp(1.15rem, 4.5vw, 1.5rem);
-    color: #fff;
-    background: #2fbf71;
-    border: none;
+    color: #fffaf0;
+    background: linear-gradient(135deg, #277a68, #175c52 58%, #123f42);
+    border: 1.5px solid rgba(246, 199, 102, .72);
     border-radius: 999px;
     padding: 13px 38px;
     cursor: pointer;
-    box-shadow: 0 6px 0 #1e9455;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .32), inset 0 1px 0 rgba(255,255,255,.22);
     margin-top: 6px;
   }
-  .play-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #1e9455; }
+  .play-btn:active { transform: translateY(2px); box-shadow: 0 3px 10px rgba(0,0,0,.3); }
   .name-label {
     font-family: "Fredoka", sans-serif; font-weight: 600;
-    color: #fff; font-size: 1.05rem; text-shadow: 0 2px 4px #14467f99;
+    color: #fff3d1; font-size: 1.05rem; text-shadow: 0 2px 5px rgba(0,0,0,.6);
   }
   .name-input {
     font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 1.15rem;
-    text-align: center; color: #14467f;
-    border: 3px solid #ffd166; border-radius: 999px;
+    text-align: center; color: #213f3a;
+    border: 2px solid #d9a94f; border-radius: 999px;
     padding: 9px 18px; width: min(280px, 80vw); outline: none;
-    background: #fffffff2;
+    background: linear-gradient(180deg, #fffaf0, #efdfba);
+    box-shadow: inset 0 2px 6px rgba(99, 68, 20, .18), 0 5px 16px rgba(0,0,0,.24);
   }
-  .name-input:focus { border-color: #ff6b9d; }
+  .name-input:focus { border-color: #e2703a; }
   .scorecard {
-    background: #ffffffd9; border: 3px solid #ffd166; border-radius: 16px;
+    background: linear-gradient(160deg, rgba(255, 248, 231, .96), rgba(232, 211, 169, .94));
+    border: 2px solid #b98436; border-radius: 8px;
     padding: 10px 16px; max-width: min(480px, 88vw); width: 100%;
     max-height: 38vh; overflow-y: auto;
+    box-shadow: 0 12px 28px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.65);
   }
   .scorecard h3 {
-    font-family: "Fredoka", sans-serif; color: #14467f;
+    font-family: "Fredoka", sans-serif; color: #31584a;
     font-size: 1.02rem; margin-bottom: 6px;
   }
   .scorecard ol { list-style: none; }
   .scorecard li {
     display: flex; gap: 8px; align-items: baseline;
-    font-weight: 700; color: #33396b; font-size: 0.98rem;
-    padding: 3px 6px; border-radius: 8px; text-align: left;
+    font-weight: 700; color: #3d3425; font-size: 0.98rem;
+    padding: 3px 6px; border-radius: 6px; text-align: left;
   }
   .scorecard li .who { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .scorecard li.me { background: #ffe9a8; outline: 2px solid #ffb703; }
-  .scorecard .empty { font-weight: 700; color: #5a6080; }
+  .scorecard li.me { background: #f3cf7d; outline: 2px solid #b06f22; }
+  .scorecard .empty { font-weight: 700; color: #6d6046; }
   .start-card { max-height: 26vh; }
-  .icon-btn.light { background: #ffffffcc; margin-top: 2px; }
+  .icon-btn.light { background: linear-gradient(135deg, #f4ead3, #cdbb96); margin-top: 2px; }
   .hint {
     margin-top: 12px;
     font-weight: 700;
-    color: #14467f;
+    color: #f7e8c3;
     font-size: 1rem;
     text-align: center;
+    text-shadow: 0 2px 8px rgba(0,0,0,.38);
   }
   .hint kbd {
-    background: #fff;
-    border: 2px solid #14467f55;
+    background: #f4ead3;
+    color: #173f3b;
+    border: 2px solid rgba(23,63,59,.42);
     border-bottom-width: 4px;
     border-radius: 7px;
     padding: 1px 8px;
     font-family: "Fredoka", sans-serif;
+    text-shadow: none;
   }
 </style>
 </head>
