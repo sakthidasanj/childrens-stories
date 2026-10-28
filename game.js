@@ -952,35 +952,67 @@
     ctx.translate(x, baseY);
     ctx.scale(s, s);
     if (rot) ctx.rotate(rot);
+    // A freed kitten GALLOPS like a real animal: the whole body rocks
+    // nose-down / nose-up on the stride (on top of any twirl spin).
+    if (happy) ctx.rotate(Math.sin(phase) * 0.06);
     var bob = happy ? Math.abs(Math.sin(phase)) * 5 : 0;
     ctx.translate(0, -bob);
     // soft ground shadow
     ctx.fillStyle = "rgba(60,90,40,0.22)";
     ctx.beginPath(); ctx.ellipse(0, 1 + bob, 17, 3.5, 0, 0, 6.29); ctx.fill();
-    // tail — curved, tapered, with stripes; tip curls up happily
+    // tail — curved, tapered, with stripes; tip curls up happily and
+    // streams side to side a little while she gallops
+    var tailTipX = 25 + (happy ? Math.sin(phase + 0.8) * 2.5 : 0);
     ctx.lineCap = "round";
     ctx.strokeStyle = fur.shadow;
     ctx.lineWidth = 6;
     ctx.beginPath();
     ctx.moveTo(13, -10);
-    ctx.quadraticCurveTo(27, -14, 25, -30 - (happy ? 3 : 0));
+    ctx.quadraticCurveTo(27, -14, tailTipX, -30 - (happy ? 3 : 0));
     ctx.stroke();
     ctx.strokeStyle = k.color;
     ctx.lineWidth = 4.4;
     ctx.beginPath();
     ctx.moveTo(13, -10);
-    ctx.quadraticCurveTo(27, -14, 25, -30 - (happy ? 3 : 0));
+    ctx.quadraticCurveTo(27, -14, tailTipX, -30 - (happy ? 3 : 0));
     ctx.stroke();
-    // paws
-    ctx.fillStyle = fur.shadow;
-    ctx.beginPath(); ctx.ellipse(-8, -2, 5.5, 3, 0, 0, 6.29); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(7, -2, 5.5, 3, 0, 0, 6.29); ctx.fill();
-    // body with shaded underside and a cream chest
+    // LEGS. In the cage she sits still on two quiet paws. Once freed she
+    // runs like a real kitten: front pair reaches forward while the back
+    // pair pushes off (a gallop), each leg a curved, bending shape whose
+    // paw tucks up as it swings through. sf/sb = paw swing of the front
+    // and back pairs; lf/lb = how tucked-up each pair is mid-swing.
+    var sf = happy ? Math.sin(phase) * 5 : 0;
+    var sb = happy ? Math.sin(phase + 2.4) * 5 : 0;
+    var lf = happy ? Math.max(0, Math.cos(phase)) : 0;
+    var lb = happy ? Math.max(0, Math.cos(phase + 2.4)) : 0;
+    function kitLeg(hipX, swing, liftP, front) {
+      ctx.beginPath();
+      ctx.moveTo(hipX, -6);
+      ctx.quadraticCurveTo(hipX + swing * 0.4 + (front ? 1.2 : -1.2), -3,
+        hipX + swing, -0.4 - liftP * 2.4);
+      ctx.stroke();
+    }
+    if (happy) {
+      // far pair first (slightly faded, tucked behind the body)
+      ctx.save();
+      ctx.globalAlpha = 0.72;
+      ctx.strokeStyle = fur.shadow; ctx.lineWidth = 3;
+      kitLeg(-7.5, sf * 0.85, lf, true);
+      kitLeg(11.5, sb * 0.85, lb, false);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = fur.shadow;
+      ctx.beginPath(); ctx.ellipse(-8, -2, 5.5, 3, 0, 0, 6.29); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(7, -2, 5.5, 3, 0, 0, 6.29); ctx.fill();
+    }
+    // body with shaded underside and a cream chest — while galloping
+    // the spine stretches and gathers a little on the stride
     var bodyGrad = ctx.createLinearGradient(0, -26, 0, 0);
     bodyGrad.addColorStop(0, k.color);
     bodyGrad.addColorStop(1, fur.shadow);
     ctx.fillStyle = bodyGrad;
-    ctx.beginPath(); ctx.ellipse(0, -12, 17, 11.5, 0, 0, 6.29); ctx.fill();
+    var bodyRx = 17 + (happy ? Math.sin(phase + 0.6) * 1.5 : 0);
+    ctx.beginPath(); ctx.ellipse(0, -12, bodyRx, 11.5, 0, 0, 6.29); ctx.fill();
     ctx.fillStyle = fur.belly;
     ctx.beginPath(); ctx.ellipse(-6, -8.5, 9, 6, -0.25, 0, 6.29); ctx.fill();
     // tabby stripes on the back (Mittai & Chinna)
@@ -1001,6 +1033,13 @@
       ctx.beginPath(); ctx.ellipse(12, -13, 2.6, 1.9, -0.3, 0, 6.29); ctx.fill();
       ctx.beginPath(); ctx.ellipse(-1, -15.5, 2.2, 1.6, 0.2, 0, 6.29); ctx.fill();
       ctx.beginPath(); ctx.ellipse(9, -7.5, 2.4, 1.7, 0.5, 0, 6.29); ctx.fill();
+    }
+    // near pair of galloping legs, drawn over the body's lower edge so
+    // the bend reads clearly (far pair went under the body, above)
+    if (happy) {
+      ctx.strokeStyle = fur.shadow; ctx.lineWidth = 3.4;
+      kitLeg(-9.5, sf, lf, true);
+      kitLeg(9.5, sb, lb, false);
     }
     // head with shaded cheek side
     var headGrad = ctx.createRadialGradient(-14, -31, 2, -10, -26, 13);
@@ -1112,15 +1151,43 @@
     var x = ob.x + ob.w / 2, baseY = GROUND;
     // Walking style per gait: sneak crouches low with small quick leg
     // swings; gallop bounds with big same-direction leg swings and a
-    // body bounce; trot is the classic alternating run.
+    // body bounce; trot is the classic alternating run. Every leg is
+    // TWO segments now — it flexes as it swings through (paw tucks up
+    // and folds) and straightens as it plants, like a real animal.
+    // The whole body rides the stride too: a pitch rock plus a bob.
     var stride = ob.gait === "gallop" ? 12 : ob.gait === "sneak" ? 4.5 : 8;
-    var bobY = ob.gait === "sneak" ? 4 : ob.gait === "gallop" ? -Math.abs(Math.sin(ob.phase)) * 4.5 : 0;
+    var bobY = ob.gait === "sneak" ? 3.5 + Math.sin(ob.phase * 2) * 0.4
+      : ob.gait === "gallop" ? -Math.abs(Math.sin(ob.phase)) * 4.5
+      : -Math.abs(Math.sin(ob.phase)) * 1.8;
+    var pitch = ob.gait === "gallop" ? Math.sin(ob.phase) * 0.055
+      : ob.gait === "trot" ? Math.sin(ob.phase) * 0.02
+      : Math.sin(ob.phase * 2) * 0.008;
     ctx.save();
     ctx.translate(x, baseY + bobY);
     ctx.scale(s, s);
+    ctx.rotate(pitch);
     var run = Math.sin(ob.phase) * stride;
     var run2 = ob.gait === "gallop" ? Math.sin(ob.phase) * stride * 0.85 : Math.sin(ob.phase + Math.PI) * stride;
     var tailWag = Math.sin(ob.phase * 0.7) * 3;
+    // One bending leg. (hipX, -14) is the hip; s = this leg's paw swing;
+    // pLeg = its phase — the leg flexes hardest mid-swing (cos peaks as
+    // the paw comes through): front paws tuck back-up, hind paws fold
+    // forward-up, then both extend to plant. Dark "sock" paw at the end.
+    function foxLeg(hipX, s, pLeg, front, col, wdt) {
+      var liftP = Math.max(0, Math.cos(pLeg));
+      var pawX = hipX + s + (front ? -liftP * 4 : liftP * 3.5);
+      var pawY = -2 - liftP * 3;
+      var kneeX = hipX + s * 0.42 + (front ? 1 + liftP * 2 : 2 + liftP * 2);
+      var kneeY = -8 - liftP * 1.5;
+      ctx.strokeStyle = col; ctx.lineWidth = wdt; ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(hipX, -14); ctx.lineTo(kneeX, kneeY); ctx.lineTo(pawX, pawY);
+      ctx.stroke();
+      ctx.fillStyle = "#5f3a17";
+      ctx.beginPath(); ctx.ellipse(pawX, pawY + 0.5, wdt * 0.85, 3, 0, 0, 6.29); ctx.fill();
+    }
+    var phNear = ob.phase;
+    var phFar = ob.gait === "gallop" ? ob.phase : ob.phase + Math.PI;
     // ground shadow
     ctx.fillStyle = "rgba(28,42,24,0.32)";
     ctx.beginPath(); ctx.ellipse(2, 2, 36, 5, 0, 0, 6.29); ctx.fill();
@@ -1137,17 +1204,9 @@
     ctx.quadraticCurveTo(50, -24 + tailWag, 42, -26 + tailWag);
     ctx.quadraticCurveTo(48, -33 + tailWag, 44, -42 + tailWag);
     ctx.fill();
-    // far legs (darker, opposite phase) with dark "sock" paws
-    ctx.strokeStyle = "#9c4f0e";
-    ctx.lineWidth = 6;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(-10, -15); ctx.lineTo(-10 + run2, -4);
-    ctx.moveTo(16, -15); ctx.lineTo(16 + run, -4);
-    ctx.stroke();
-    ctx.fillStyle = "#5f3a17";
-    ctx.beginPath(); ctx.ellipse(-10 + run2, -2, 5, 3, 0, 0, 6.29); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(16 + run, -2, 5, 3, 0, 0, 6.29); ctx.fill();
+    // far legs (darker, opposite phase, bending at the knee/hock)
+    foxLeg(-10, run2, phFar, true, "#9c4f0e", 6);
+    foxLeg(16, run, phNear, false, "#9c4f0e", 6);
     // body — russet gradient, darker saddle on the back, cream belly
     var bodyGrad = ctx.createLinearGradient(0, -48, 0, -8);
     bodyGrad.addColorStop(0, "#c4680f");
@@ -1163,16 +1222,9 @@
     ctx.lineTo(-18, -19); ctx.lineTo(-26, -17);
     ctx.quadraticCurveTo(-30, -25, -24, -34);
     ctx.fill();
-    // near legs
-    ctx.strokeStyle = "#c4680f";
-    ctx.lineWidth = 6.5;
-    ctx.beginPath();
-    ctx.moveTo(-16, -14); ctx.lineTo(-16 + run, -4);
-    ctx.moveTo(10, -14); ctx.lineTo(10 + run2, -4);
-    ctx.stroke();
-    ctx.fillStyle = "#5f3a17";
-    ctx.beginPath(); ctx.ellipse(-16 + run, -2, 5.5, 3, 0, 0, 6.29); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(10 + run2, -2, 5.5, 3, 0, 0, 6.29); ctx.fill();
+    // near legs (brighter, bending at the knee/hock)
+    foxLeg(-16, run, phNear, true, "#c4680f", 6.5);
+    foxLeg(10, run2, phFar, false, "#c4680f", 6.5);
     // ears first (behind head): tall, pointed, dark-backed, cream inner
     ctx.fillStyle = "#9c4f0e";
     ctx.beginPath();
@@ -1253,17 +1305,63 @@
     ctx.save();
     ctx.translate(x, feet);
     var ph = inba.runPhase;
-    var legSwing = inba.grounded ? Math.sin(ph) * 13 : 6;
-    var armSwing = inba.grounded ? Math.sin(ph) * 9 : -6;
+    var liftA = inba.capeLift || 0; // eases 0 (ground) -> 1 (air): blends run pose into jump pose
     var bounce = inba.grounded ? Math.abs(Math.sin(ph)) * 2.4 : 0;
     ctx.translate(0, -bounce);
     ctx.lineCap = "round";
 
-    // Foot positions for this stride (front foot strides, back foot trails)
-    var fFootX = 24 + legSwing, fFootY = inba.grounded ? -1 : -9;
-    var bFootX = 20 - legSwing, bFootY = inba.grounded ? -3 : -2;
-    var fKneeX = 26 + legSwing * 0.45, fKneeY = -19;
-    var bKneeX = 18 - legSwing * 0.35, bKneeY = -18;
+    // RUN CYCLE — each leg on its own phase. A leg bends most while it
+    // swings forward through the air: liftP peaks mid-swing, the knee
+    // drives forward of the straight hip->foot line and the foot tucks
+    // up. The planted leg stays nearly straight, like real running.
+    function runLeg(hipX, p) {
+      var sw = Math.sin(p), liftP = Math.max(0, Math.cos(p));
+      var footX = hipX + sw * 13;
+      var footY = -2 - liftP * 7;
+      var bend = 0.15 + liftP * 0.85;
+      return [footX, footY,
+        (hipX + footX) / 2 + bend * 6.5,
+        (-34 + footY) / 2 - bend * 2.5 - 1];
+    }
+    // JUMP POSE — rising: front knee tucked high, back leg trailing;
+    // falling: both legs reach down, ready to land. airT: 0 rise -> 1 fall.
+    var airT = Math.max(0, Math.min(1, (inba.vy + 12) / 24));
+    function jumpLeg(front) {
+      var rise = front ? [30, -18, 34, -30] : [8, -10, 16, -22];
+      var fall = front ? [30, -6, 30, -20] : [14, -4, 20, -18];
+      var o = [];
+      for (var q = 0; q < 4; q++) o.push(rise[q] + (fall[q] - rise[q]) * airT);
+      return o;
+    }
+    function blendPose(a, b) {
+      var o = [];
+      for (var q = 0; q < 4; q++) o.push(a[q] + (b[q] - a[q]) * liftA);
+      return o;
+    }
+    var fPose = blendPose(runLeg(23, ph), jumpLeg(true));
+    var bPose = blendPose(runLeg(20, ph + Math.PI), jumpLeg(false));
+    var fFootX = fPose[0], fFootY = fPose[1], fKneeX = fPose[2], fKneeY = fPose[3];
+    var bFootX = bPose[0], bFootY = bPose[1], bKneeX = bPose[2], bKneeY = bPose[3];
+
+    // One arm with a BENT elbow. (sx, sy) = shoulder; s = swing value
+    // -1..1 (arms pump opposite to the leg on the same side, like real
+    // running). In the air the pose blends to: front arm reaching up,
+    // back arm trailing down, with a soft flutter.
+    function drawArm(sx, sy, s, front, col) {
+      var ex = sx + s * 2.5, ey = sy + 11 - Math.abs(s) * 1.5;
+      var hx = ex + 2 + s * 6, hy = ey + 3 - Math.max(0, s) * 4;
+      if (liftA > 0) {
+        var ax = front ? 34 : 13, ay = front ? -58 : -56;
+        var ahx = front ? 41 : 5, ahy = front ? -73 : -45;
+        var wob = Math.sin(frame * 0.3 + (front ? 0 : 2)) * 1.6 * liftA;
+        ex += (ax - ex) * liftA; ey += (ay - ey) * liftA;
+        hx += (ahx + wob - hx) * liftA; hy += (ahy - hy) * liftA;
+      }
+      ctx.strokeStyle = col; ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.lineTo(hx, hy); ctx.stroke();
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(hx, hy + 0.5, 3.5, 0, 6.29); ctx.fill();
+    }
 
     // Cape — fluid cloth, driven by inba.capeLift (0 = on the ground,
     // 1 = flying). On the ground it just hangs down her back, nearly
@@ -1321,14 +1419,8 @@
       ctx.stroke();
     }
 
-    // back arm (slightly darker skin, swings opposite)
-    ctx.strokeStyle = "#8a4b23";
-    ctx.lineWidth = 6;
-    ctx.beginPath();
-    ctx.moveTo(17, -65); ctx.lineTo(13 - armSwing * 0.8, -49);
-    ctx.stroke();
-    ctx.fillStyle = "#8a4b23";
-    ctx.beginPath(); ctx.arc(13 - armSwing * 0.8, -48, 3.4, 0, 6.29); ctx.fill();
+    // back arm (slightly darker skin, pumps opposite to the front arm)
+    drawArm(17, -65, Math.sin(ph), false, "#8a4b23");
 
     // legs — two segments each (thigh + shin) so the knees bend as she runs
     ctx.strokeStyle = "#a05c2c";
@@ -1352,7 +1444,7 @@
     shoe(bFootX, bFootY);
     shoe(fFootX, fFootY);
 
-    // dress — purple gradient, soft fold lines, gold waist band
+    // dress — peacock-teal gradient, soft fold lines, gold waist band
     var dressGrad = ctx.createLinearGradient(5, -72, 40, -30);
     dressGrad.addColorStop(0, "#2f8f83");
     dressGrad.addColorStop(1, "#175e5a");
@@ -1374,16 +1466,11 @@
     ctx.fillStyle = "#d9962c";
     ctx.fillRect(5, -34.5, 35, 1.6);
 
-    // front arm (sleeve puff, forearm, hand)
+    // front arm (sleeve puff, then the bent-elbow arm — it swings
+    // opposite to the front leg, the way arms really pump when running)
     ctx.fillStyle = "#20736b";
     ctx.beginPath(); ctx.arc(30, -65, 5.5, 0, 6.29); ctx.fill();
-    ctx.strokeStyle = "#b06a34";
-    ctx.lineWidth = 6;
-    ctx.beginPath();
-    ctx.moveTo(30, -64); ctx.lineTo(35 + armSwing, -49);
-    ctx.stroke();
-    ctx.fillStyle = "#b06a34";
-    ctx.beginPath(); ctx.arc(35 + armSwing, -48, 3.6, 0, 6.29); ctx.fill();
+    drawArm(30, -64, -Math.sin(ph), true, "#b06a34");
 
     // neck + head — warm skin gradient, ear, soft jaw shading
     ctx.fillStyle = "#a05c2c";
