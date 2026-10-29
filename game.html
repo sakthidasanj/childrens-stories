@@ -111,6 +111,27 @@
      by width alone. */
   canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
   .stage:fullscreen { border: none; border-radius: 0; max-width: none; }
+  /* Stats bar INSIDE the stage: the page HUD sits outside the stage, so
+     fullscreen (which shows only the stage) would hide the stats. This
+     mirrored bar appears only in fullscreen, floating over the scene. */
+  .fs-stats {
+    display: none;
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    gap: 8px;
+    z-index: 3;
+    pointer-events: none;
+    flex-wrap: nowrap;
+    max-width: 96%;
+  }
+  .stage:fullscreen .fs-stats { display: flex; }
+  .fs-stats .hud-chip {
+    font-size: clamp(0.78rem, 2.6vw, 1.05rem);
+    padding: 5px 13px;
+    white-space: nowrap;
+  }
   .rotate-tip {
     display: none;
     margin-top: 8px;
@@ -251,6 +272,13 @@
 
 <div class="stage" id="stage">
   <canvas id="game" width="960" height="540" aria-label="Inba Kitten Rescue game area"></canvas>
+
+  <div class="fs-stats" aria-label="Game status in full screen">
+    <span class="hud-chip" id="fsTimeChip">⏱ 2:00</span>
+    <span class="hud-chip" id="fsFoxChip">🦊 Foxes: 0</span>
+    <span class="hud-chip" id="fsKittensChip">🐱 Rescued: 0</span>
+    <span class="hud-chip" id="fsDistChip">🏃 0 m</span>
+  </div>
 
   <div class="overlay" id="startOverlay">
     <div class="big" aria-hidden="true">🦸‍♀️🐱🦊</div>

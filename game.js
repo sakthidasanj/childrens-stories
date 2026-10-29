@@ -12,6 +12,12 @@
   var timeChip = document.getElementById("timeChip");
   var foxChip = document.getElementById("foxChip");
   var distChip = document.getElementById("distChip");
+  // Mirrored chips inside the stage, shown only in fullscreen (the page
+  // HUD lives outside the stage, so fullscreen hides it otherwise).
+  var fsTimeChip = document.getElementById("fsTimeChip");
+  var fsFoxChip = document.getElementById("fsFoxChip");
+  var fsKittensChip = document.getElementById("fsKittensChip");
+  var fsDistChip = document.getElementById("fsDistChip");
   var startOverlay = document.getElementById("startOverlay");
   var endOverlay = document.getElementById("endOverlay");
   var nameInput = document.getElementById("nameInput");
@@ -315,6 +321,13 @@
     foxChip.textContent = "🦊 Foxes: " + foxesDodged;
     kittensChip.textContent = "🐱 Rescued: " + rescued;
     distChip.textContent = "🏃 " + Math.floor(distanceM) + " m";
+    // Keep the fullscreen stats bar in step, every tick.
+    if (fsTimeChip) {
+      fsTimeChip.textContent = timeChip.textContent;
+      fsFoxChip.textContent = foxChip.textContent;
+      fsKittensChip.textContent = kittensChip.textContent;
+      fsDistChip.textContent = distChip.textContent;
+    }
   }
 
   /* ================= Spawning ================= */
